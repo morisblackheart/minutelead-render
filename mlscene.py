@@ -81,24 +81,36 @@ TRADE_ICON = {
  "pet":"paw","vet":"paw","groom":"paw","photo":"camera","security":"shield","alarm":"shield","appliance":"wrench",
  "garage":"garage","irrigation":"drop","sprinkler":"drop","septic":"drop","drain":"drop","water heater":"drop",
 }
-# 3) theme-only fallback (titles with NO specific trade) → bespoke story scenes
-THEME_BESPOKE = {
- "missed call":"how-to-stop-losing-leads-from-missed-calls","qualif":"ai-lead-qualification-for-home-services",
- "after hours":"after-hours-answering-service-for-contractors","after-hours":"after-hours-answering-service-for-contractors",
- "answering":"after-hours-answering-service-for-contractors","estimate":"automated-estimate-booking-for-contractors",
- "booking":"automated-estimate-booking-for-contractors","schedul":"automated-estimate-booking-for-contractors",
- "contractor":"best-lead-response-system-for-contractors","service business":"best-lead-response-system-for-contractors",
- "lead response":"best-lead-response-system-for-contractors","lead":"best-lead-response-system-for-contractors",
-}
-def classify(title):
+# 3) theme/topic (titles with NO specific trade) → spread across DISTINCT story scenes
+MISSED  ="how-to-stop-losing-leads-from-missed-calls"
+AFTERHRS="after-hours-answering-service-for-contractors"
+QUALIF  ="ai-lead-qualification-for-home-services"
+BOOKING ="automated-estimate-booking-for-contractors"
+LEADRESP="best-lead-response-system-for-contractors"
+# ordered list — FIRST match wins. Keep BOOKING ahead of ANSWERING so "...books jobs" -> calendar.
+THEME_SPECIFIC = [
+ ("voicemail",MISSED),("missed call",MISSED),("missed-call",MISSED),("miss call",MISSED),("miss a call",MISSED),("missing call",MISSED),
+ ("after hours",AFTERHRS),("after-hours",AFTERHRS),("overnight",AFTERHRS),("24/7",AFTERHRS),("answering service",AFTERHRS),
+ ("qualif",QUALIF),("screen",QUALIF),("junk lead",QUALIF),("tire-kick",QUALIF),("filter",QUALIF),
+ ("estimate",BOOKING),("booking",BOOKING),("book ",BOOKING),("books ",BOOKING),("schedul",BOOKING),("appointment",BOOKING),("quote",BOOKING),("calendar",BOOKING),("no-show",BOOKING),
+ ("answering",AFTERHRS),("call automation",AFTERHRS),("auto-text",AFTERHRS),("text back",AFTERHRS),("pick up",AFTERHRS),
+ ("respond",LEADRESP),("response",LEADRESP),("speed to lead",LEADRESP),("how fast",LEADRESP),("fast",LEADRESP),("first to",LEADRESP),("follow up",LEADRESP),("follow-up",LEADRESP),("reply",LEADRESP),("speed",LEADRESP),("convert",LEADRESP),("nurtur",LEADRESP),
+]
+# generic business terms with no specific topic → ROTATE across story scenes (variety, not one image)
+GENERIC_TERMS = ("lead","contractor","service","business","call","client","customer","sales","grow","revenue","win","job","crm","automat")
+ROTATION = [LEADRESP, MISSED, BOOKING, QUALIF, AFTERHRS]
+
+def classify(title, seed=0):
     t=(title or "").lower()
     for kw,slug in TRADE_BESPOKE.items():
         if kw in t: return slug, True
     for kw,slug in TRADE_ICON.items():
         if kw in t: return slug, False
-    for kw,slug in THEME_BESPOKE.items():
+    for kw,slug in THEME_SPECIFIC:
         if kw in t: return slug, True
-    return "wrench", False   # default generic local-service icon
+    if any(k in t for k in GENERIC_TERMS):       # spread generic posts so they never look identical
+        return ROTATION[seed % len(ROTATION)], True
+    return "wrench", False   # truly nothing matched → generic local-service icon
 
 # ---------------- generic icon scene (any vertical) ----------------
 def _icon_svg(path,fill,x,y,size,stroke="#fff"):
@@ -143,7 +155,7 @@ def _xml_safe(svg):  # quote any bare HTML-style attributes so it's well-formed 
     return _ATTR.sub(lambda m: f'{m.group(1)}="{m.group(2)}"', svg)
 
 def title_to_svg(title, seed=0):
-    slug, bespoke = classify(title)
+    slug, bespoke = classify(title, seed)
     if bespoke:
         fn, night = g.COMPOSE[slug]
         body = fn(seed % 2)
