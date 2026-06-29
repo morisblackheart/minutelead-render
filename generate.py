@@ -112,36 +112,58 @@ def H_missed(x,y):
             f'<circle cx="176" cy="92" r="12" fill="{CO}"/><path d="M171 92h10M176 87v10" stroke="#fff" stroke-width="3" stroke-linecap="round"/>'
             f'<rect x="96" y="186" width="88" height="10" rx="5" fill="{NV}"/><rect x="96" y="208" width="60" height="10" rx="5" fill="#C9C3B6"/></g>')
 
-# ---------- bespoke composition per post (v=0 = original/variant-A, v=1 = variant-B mirror-layout) ----------
+# ---------- bespoke composition per post — 4 layouts each (seed%4) ----------
+# v0 hero-right/supports-left · v1 hero-left/supports-right · v2 hero-centered split-A · v3 hero-centered split-B
 def c_contractor(v=0):
-    return hub_funnel(560,330,1) if v==0 else hub_funnel(640,330,-1)
+    return [hub_funnel(560,330,1),
+            hub_funnel(640,330,-1),
+            hub_funnel(600,300,1)+badge_check(190,210,30),
+            hub_funnel(600,372,-1)+missed_tag(150,470)][v%4]
 def c_locksmith(v=0):
-    return (H_lock(360,210)+moon(940,150,66)+card_booked(880,360) if v==0
-            else H_lock(700,210)+moon(200,160,66)+card_booked(170,360))
+    return [H_lock(360,210)+moon(940,150,66)+card_booked(880,360),
+            H_lock(700,210)+moon(200,160,66)+card_booked(170,360),
+            H_lock(470,158)+moon(180,150,58)+card_booked(880,380),
+            H_lock(470,250)+moon(950,140,58)+card_booked(150,360)][v%4]
 def c_roofer(v=0):
-    return (H_roof(520,150)+sun(960,150,60)+card_booked(150,300) if v==0
-            else H_roof(250,150)+sun(210,130,58)+card_booked(880,330))
+    return [H_roof(520,150)+sun(960,150,60)+card_booked(150,300),
+            H_roof(250,150)+sun(210,130,58)+card_booked(880,330),
+            H_roof(420,120)+sun(180,150,56)+card_booked(880,360),
+            H_roof(420,200)+sun(960,140,56)+card_booked(150,360)][v%4]
 def c_electrician(v=0):
-    return (H_electric(700,210)+sms(190,250)+card_booked(170,360)+spark(330,300,690,330) if v==0
-            else H_electric(320,210)+sms(840,250)+card_booked(860,360)+spark(840,330,510,330))
+    return [H_electric(700,210)+sms(190,250)+card_booked(170,360)+spark(330,300,690,330),
+            H_electric(320,210)+sms(840,250)+card_booked(860,360)+spark(840,330,510,330),
+            H_electric(480,150)+sms(170,210)+card_booked(870,370)+spark(300,250,700,300),
+            H_electric(480,250)+sms(840,210)+card_booked(160,380)+spark(820,260,700,320)][v%4]
 def c_hvac(v=0):
-    return (H_hvac(640,230)+missed_tag(180,210)+clock(290,360,40)+badge_check(980,470,26) if v==0
-            else H_hvac(300,230)+missed_tag(840,210)+clock(950,360,40)+badge_check(200,470,26))
+    return [H_hvac(640,230)+missed_tag(180,210)+clock(290,360,40)+badge_check(980,470,26),
+            H_hvac(300,230)+missed_tag(840,210)+clock(950,360,40)+badge_check(200,470,26),
+            H_hvac(460,180)+missed_tag(150,200)+card_booked(880,360),
+            H_hvac(460,255)+missed_tag(840,200)+card_booked(150,360)][v%4]
 def c_plumber(v=0):
-    return (H_plumb(560,200)+clock(950,160,48)+moon(180,150,58)+card_booked(840,380) if v==0
-            else H_plumb(380,200)+clock(230,170,48)+moon(980,150,58)+card_booked(180,380))
+    return [H_plumb(560,200)+clock(950,160,48)+moon(180,150,58)+card_booked(840,380),
+            H_plumb(380,200)+clock(230,170,48)+moon(980,150,58)+card_booked(180,380),
+            H_plumb(480,160)+moon(180,150,58)+card_booked(880,380)+clock(960,420,44),
+            H_plumb(480,250)+moon(960,150,58)+card_booked(150,380)+clock(240,420,44)][v%4]
 def c_missed(v=0):
-    return (H_missed(360,180)+spark(640,300,790,330)+card_booked(800,300)+missed_tag(180,170) if v==0
-            else H_missed(700,180)+spark(680,300,520,330)+card_booked(200,300)+missed_tag(840,170))
+    return [H_missed(360,180)+spark(640,300,790,330)+card_booked(800,300)+missed_tag(180,170),
+            H_missed(700,180)+spark(680,300,520,330)+card_booked(200,300)+missed_tag(840,170),
+            H_missed(510,150)+missed_tag(160,190)+card_booked(870,360)+spark(700,300,860,380),
+            H_missed(510,255)+missed_tag(850,190)+card_booked(150,360)+spark(560,360,300,420)][v%4]
 def c_booking(v=0):
-    return (H_cal(470,170)+estimate_doc(190,250)+badge_check(940,430,30) if v==0
-            else H_cal(500,170)+estimate_doc(880,250)+badge_check(230,430,30))
+    return [H_cal(470,170)+estimate_doc(190,250)+badge_check(940,430,30),
+            H_cal(500,170)+estimate_doc(880,250)+badge_check(230,430,30),
+            H_cal(480,140)+estimate_doc(170,250)+card_booked(880,380),
+            H_cal(480,255)+estimate_doc(880,255)+card_booked(150,400)][v%4]
 def c_qualification(v=0):
-    return (H_funnel(470,200)+card_booked(820,360)+missed_tag(150,200) if v==0
-            else H_funnel(560,200)+card_booked(180,360)+missed_tag(840,200))
+    return [H_funnel(470,200)+card_booked(820,360)+missed_tag(150,200),
+            H_funnel(560,200)+card_booked(180,360)+missed_tag(840,200),
+            H_funnel(480,160)+missed_tag(150,200)+card_booked(880,370),
+            H_funnel(480,250)+missed_tag(840,200)+card_booked(150,370)][v%4]
 def c_afterhours(v=0):
-    return (H_moon(470,150)+card_booked(820,360) if v==0
-            else H_moon(560,150)+card_booked(180,360))
+    return [H_moon(470,150)+card_booked(820,360),
+            H_moon(560,150)+card_booked(180,360),
+            H_moon(460,120)+card_booked(870,380)+badge_check(200,220,30),
+            H_moon(460,210)+card_booked(150,380)+badge_check(990,220,30)][v%4]
 COMPOSE={
  "best-lead-response-system-for-contractors":(c_contractor,False),
  "locksmith-after-hours-lead-response-that-wins":(c_locksmith,True),

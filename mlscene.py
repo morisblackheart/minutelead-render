@@ -158,7 +158,7 @@ def title_to_svg(title, seed=0):
     slug, bespoke = classify(title, seed)
     if bespoke:
         fn, night = g.COMPOSE[slug]
-        body = fn(seed % 2)
+        body = fn(seed % 4)                # 4 layouts per scene → far less repetition
     else:
         night = ("after hours" in (title or "").lower()) or ("24/7" in (title or "")) or ("overnight" in (title or "").lower())
         body = generic_scene(slug, seed=seed, night=night)
