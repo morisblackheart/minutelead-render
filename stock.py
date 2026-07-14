@@ -8,6 +8,7 @@ GET /stock?title=<post title>&seed=<int>&w=<width>
 Falls back to the branded SVG scene (mlscene) if the key is missing or Pexels errors,
 so the Make pipeline never breaks.
 """
+import hashlib
 import io
 import os
 import json
@@ -62,8 +63,12 @@ def pick_photo_id(title, seed=0):
     for pat, theme in THEME_RULES:
         if _re.search(pat, t):
             ids = CURATED[theme]
-            return ids[seed % len(ids)], theme
-    return DEFAULT_MIX[seed % len(DEFAULT_MIX)], "default"
+            return ids[_stable(seed) % len(ids)], theme
+    return DEFAULT_MIX[_stable(seed) % len(DEFAULT_MIX)], "default"
+
+
+def _stable(seed):
+    return int(hashlib.md5(str(seed).encode()).hexdigest(), 16)
 
 
 LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="16 16 164 164">
