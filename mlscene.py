@@ -5,6 +5,7 @@ Two tiers:
   • GENERIC: any other local-service vertical → a branded scene with the trade ICON as the
     big hero + the universal missed-call→booked story. Scales to "everything local".
 Emits strict-XML SVG (quoted attrs) so cairosvg can rasterize it on a tiny host."""
+import hashlib
 import os, sys, re
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)                                   # deploy: generate.py copied alongside
@@ -154,6 +155,47 @@ _ATTR = re.compile(r'(\s[\w:-]+)=([^\s"\'>]+)')
 def _xml_safe(svg):  # quote any bare HTML-style attributes so it's well-formed XML
     return _ATTR.sub(lambda m: f'{m.group(1)}="{m.group(2)}"', svg)
 
+
+
+# ---- palette rotation: same scenes, six accent/background moods ----
+# maps applied as plain hex substitution on the final SVG
+PALETTES = [
+    {},  # 0 classic warm orange (untouched)
+    {   # 1 green
+     "#F2960F":"#2FBF71","#C97A0C":"#1E8A54","#D9850B":"#249A5F","#F2C06A":"#7FD8A8",
+     "#FDEAD0":"#DDF3E6","#FBF8F2":"#F5FBF7","#EBE3D4":"#DCEAE0","#EFE6D7":"#DFEDE3",
+     "#FBF3E2":"#EAF7EF","#F4DFC2":"#CBEBD8","#F7E2BC":"#CFEDDB","#FBEFD2":"#E4F5EC",
+    },
+    {   # 2 coral
+     "#F2960F":"#E0664F","#C97A0C":"#B84A36","#D9850B":"#C95640","#F2C06A":"#F2A794",
+     "#FDEAD0":"#FBE3DC","#FBF8F2":"#FCF7F5","#EBE3D4":"#EFDCD5","#EFE6D7":"#F0DFD8",
+     "#FBF3E2":"#FAEDE8","#F4DFC2":"#F4CFC2","#F7E2BC":"#F6D4C8","#FBEFD2":"#FAE6DE",
+    },
+    {   # 3 blue
+     "#F2960F":"#3B72C4","#C97A0C":"#2C5795","#D9850B":"#3263A9","#F2C06A":"#93B4E4",
+     "#FDEAD0":"#E1EBFA","#FBF8F2":"#F6F9FD","#EBE3D4":"#DFE7F2","#EFE6D7":"#E1E9F3",
+     "#FBF3E2":"#EDF3FB","#F4DFC2":"#CCDCF3","#F7E2BC":"#D2E0F4","#FBEFD2":"#E6EEFA",
+    },
+    {   # 4 purple
+     "#F2960F":"#6A4FC0","#C97A0C":"#503A96","#D9850B":"#5B43AA","#F2C06A":"#AC9BDE",
+     "#FDEAD0":"#EBE5F9","#FBF8F2":"#F9F7FD","#EBE3D4":"#E5E0F0","#EFE6D7":"#E7E2F2",
+     "#FBF3E2":"#F2EEFB","#F4DFC2":"#DCD3F2","#F7E2BC":"#DFD7F3","#FBEFD2":"#EDE8F9",
+    },
+    {   # 5 teal
+     "#F2960F":"#1187A8","#C97A0C":"#0C6A85","#D9850B":"#0F7A98","#F2C06A":"#7CC4D6",
+     "#FDEAD0":"#DCF0F5","#FBF8F2":"#F4FAFC","#EBE3D4":"#DCEAEE","#EFE6D7":"#DEECF0",
+     "#FBF3E2":"#EAF5F8","#F4DFC2":"#C8E6EE","#F7E2BC":"#CEE8EF","#FBEFD2":"#E3F2F6",
+    },
+]
+
+
+def apply_palette(svg, seed, scene_slug=""):
+    idx = (int(hashlib.md5(("%s|%s" % (seed, scene_slug)).encode()).hexdigest(), 16)) % len(PALETTES)
+    for old, new in PALETTES[idx].items():
+        svg = svg.replace(old, new).replace(old.lower(), new)
+    return svg, idx
+
+
 def title_to_svg(title, seed=0):
     slug, bespoke = classify(title, seed)
     if bespoke:
@@ -162,4 +204,6 @@ def title_to_svg(title, seed=0):
     else:
         night = ("after hours" in (title or "").lower()) or ("24/7" in (title or "")) or ("overnight" in (title or "").lower())
         body = generic_scene(slug, seed=seed, night=night)
-    return _xml_safe(_wrap(body, night, seed)), slug, bespoke
+    svg = _xml_safe(_wrap(body, night, seed))
+    svg, _pal = apply_palette(svg, seed, slug)
+    return svg, slug, bespoke

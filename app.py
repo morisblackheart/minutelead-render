@@ -33,20 +33,5 @@ def featured(title: str = "", seed: int = -1, w: int = 1200):
 
 @app.get("/stock")
 def stock_route(title: str = "", seed: int = -1, w: int = 1200):
-    if seed < 0:
-        seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 100000
-    fname = f"{_slugify(title)}.jpg"
-    try:
-        jpg, credit = stock.stock_featured(title, seed, w)
-        credit = credit.encode("latin-1", "ignore").decode("latin-1")
-        return Response(content=jpg, media_type="image/jpeg",
-                        headers={"X-Photo-Credit": credit[:400], "X-Source": "pexels",
-                                 "Content-Disposition": f'inline; filename="{fname}"'})
-    except Exception as e:
-        # fall back to the branded scene so the pipeline never breaks
-        resp = featured(title, seed, w)
-        reason = f"{type(e).__name__}: {e}"[:300].encode("latin-1", "ignore").decode("latin-1")
-        resp.headers["X-Fallback-Reason"] = reason
-        resp.headers["X-Key-Present"] = "yes" if stock.PEXELS_KEY else "no"
-        return resp
-
+    """Vector featured image with palette rotation (photo mode retired by owner preference)."""
+    return featured(title, seed, w)
