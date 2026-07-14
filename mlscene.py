@@ -98,12 +98,12 @@ THEME_SPECIFIC = [
  ("report",REPORT),("dashboard",REPORT),("revenue",REPORT),("roi",REPORT),("earn",REPORT),
  ("text back",TEXTCHAT),("text-back",TEXTCHAT),("texting",TEXTCHAT),("sms",TEXTCHAT),("by text",TEXTCHAT),
  ("dispatch",VAN),("on the way",VAN),("on my way",VAN),("crew",VAN),
- ("voicemail",MISSED),("missed call",MISSED),("missed-call",MISSED),("miss call",MISSED),("miss a call",MISSED),("missing call",MISSED),
+ ("voicemail",(MISSED,TEXTCHAT)),("missed call",(MISSED,TEXTCHAT)),("missed-call",(MISSED,TEXTCHAT)),("miss call",(MISSED,TEXTCHAT)),("miss a call",(MISSED,TEXTCHAT)),("missing call",(MISSED,TEXTCHAT)),("missed",(MISSED,TEXTCHAT,LEADRESP)),
  ("after hours",AFTERHRS),("after-hours",AFTERHRS),("overnight",AFTERHRS),("24/7",AFTERHRS),("answering service",AFTERHRS),
  ("qualif",QUALIF),("screen",QUALIF),("junk lead",QUALIF),("tire-kick",QUALIF),("filter",QUALIF),
- ("estimate",BOOKING),("booking",BOOKING),("book ",BOOKING),("books ",BOOKING),("schedul",BOOKING),("appointment",BOOKING),("quote",BOOKING),("calendar",BOOKING),("no-show",BOOKING),
- ("answering",AFTERHRS),("call automation",AFTERHRS),("auto-text",TEXTCHAT),("pick up",AFTERHRS),
- ("respond",LEADRESP),("response",LEADRESP),("speed to lead",LEADRESP),("how fast",LEADRESP),("fast",LEADRESP),("first to",LEADRESP),("follow up",LEADRESP),("follow-up",LEADRESP),("reply",LEADRESP),("speed",LEADRESP),("convert",LEADRESP),("nurtur",LEADRESP),
+ ("estimate",(BOOKING,VAN)),("booking",(BOOKING,TEXTCHAT)),("book ",(BOOKING,TEXTCHAT,VAN)),("books ",(BOOKING,TEXTCHAT,VAN)),("schedul",BOOKING),("appointment",(BOOKING,VAN)),("quote",(BOOKING,REPORT)),("calendar",BOOKING),("no-show",(BOOKING,TEXTCHAT)),
+ ("answering",(AFTERHRS,VAN,TEXTCHAT)),("call automation",(AFTERHRS,TEXTCHAT,VAN)),("auto-text",TEXTCHAT),("pick up",(AFTERHRS,TEXTCHAT)),
+ ("respond",(LEADRESP,VAN,TEXTCHAT,REPORT)),("response",(LEADRESP,VAN,TEXTCHAT,REPORT)),("speed to lead",(LEADRESP,VAN)),("how fast",(LEADRESP,VAN,TEXTCHAT)),("fast",(LEADRESP,VAN,TEXTCHAT,REPORT)),("first to",(LEADRESP,VAN)),("follow up",(LEADRESP,TEXTCHAT,REPORT)),("follow-up",(LEADRESP,TEXTCHAT,REPORT)),("reply",(TEXTCHAT,LEADRESP)),("speed",(LEADRESP,VAN)),("convert",(LEADRESP,REPORT)),("nurtur",(TEXTCHAT,LEADRESP)),
 ]
 # generic business terms with no specific topic → ROTATE across story scenes (variety, not one image)
 GENERIC_TERMS = ("lead","contractor","service","business","call","client","customer","sales","grow","revenue","win","job","crm","automat")
@@ -116,7 +116,10 @@ def classify(title, seed=0):
     for kw,slug in TRADE_ICON.items():
         if kw in t: return slug, False
     for kw,slug in THEME_SPECIFIC:
-        if kw in t: return slug, True
+        if kw in t:
+            if isinstance(slug,(list,tuple)):
+                slug = slug[seed % len(slug)]
+            return slug, True
     if any(k in t for k in GENERIC_TERMS):       # spread generic posts so they never look identical
         return ROTATION[seed % len(ROTATION)], True
     return "wrench", False   # truly nothing matched → generic local-service icon
