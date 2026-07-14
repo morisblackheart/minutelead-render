@@ -164,6 +164,90 @@ def c_afterhours(v=0):
             H_moon(560,150)+card_booked(180,360),
             H_moon(460,120)+card_booked(870,380)+badge_check(200,220,30),
             H_moon(460,210)+card_booked(150,380)+badge_check(990,220,30)][v%4]
+
+# ---------- dynamism helpers ----------
+def dots(pts):
+    cs=[OR,GR,CO,NV]
+    return "".join(f'<circle cx="{x}" cy="{y}" r="{r}" fill="{cs[i%4]}" opacity=".9"/>' for i,(x,y,r) in enumerate(pts))
+def flow(x1,y1,x2,y2,c=None,bend=-60):
+    c=c or OR
+    mx,my=(x1+x2)/2,(y1+y2)/2+bend
+    ang_dx,ang_dy=x2-mx,y2-my
+    import math as _m
+    a=_m.atan2(ang_dy,ang_dx)
+    p1=(x2-14*_m.cos(a-0.5),y2-14*_m.sin(a-0.5)); p2=(x2-14*_m.cos(a+0.5),y2-14*_m.sin(a+0.5))
+    return (f'<path d="M{x1} {y1} Q {mx} {my} {x2} {y2}" fill="none" stroke="{c}" stroke-width="4" stroke-dasharray="2 10" stroke-linecap="round"/>'
+            f'<path d="M{x2} {y2} L{p1[0]:.0f} {p1[1]:.0f} L{p2[0]:.0f} {p2[1]:.0f} Z" fill="{c}"/>')
+
+# ---------- new hero motifs ----------
+def H_chat(x,y):
+    return (f'<g transform="translate({x},{y})">'
+            f'<rect x="0" y="0" width="180" height="270" rx="32" fill="{NV}"/><rect x="14" y="20" width="152" height="230" rx="22" fill="{CR}"/>'
+            f'<rect x="28" y="44" width="88" height="34" rx="12" fill="#E9E2D3"/>'
+            f'<rect x="38" y="56" width="66" height="6" rx="3" fill="#B9AF9C"/>'
+            f'<rect x="64" y="92" width="88" height="42" rx="12" fill="{OR}"/>'
+            f'<rect x="74" y="104" width="66" height="6" rx="3" fill="#fff"/><rect x="74" y="116" width="44" height="6" rx="3" fill="#FBD9A8"/>'
+            f'<rect x="28" y="148" width="70" height="30" rx="12" fill="#E9E2D3"/>'
+            f'<circle cx="48" cy="163" r="4" fill="#B9AF9C"/><circle cx="63" cy="163" r="4" fill="#B9AF9C"/><circle cx="78" cy="163" r="4" fill="#B9AF9C"/>'
+            f'<rect x="64" y="192" width="88" height="34" rx="12" fill="{GR}"/>'
+            f'<rect x="74" y="202" width="60" height="6" rx="3" fill="#fff"/><rect x="74" y="213" width="40" height="5" rx="2.5" fill="#CFF2DE"/>'
+            f'</g>')
+def H_van(x,y):
+    return (f'<g transform="translate({x},{y})">'
+            f'<path d="M188 96 h-160 v-60 q0 -14 14 -14 h96 q12 0 18 10 l22 34 q10 4 10 14 z" fill="{CR}" stroke="{NV}" stroke-width="7" stroke-linejoin="round"/>'
+            f'<path d="M140 30 l18 30 h-42 v-30 z" fill="{BL}" stroke="{NV}" stroke-width="5" stroke-linejoin="round"/>'
+            f'<rect x="40" y="34" width="58" height="26" rx="8" fill="{BL}" stroke="{NV}" stroke-width="5"/>'
+            f'<rect x="28" y="70" width="118" height="12" rx="6" fill="{OR}"/>'
+            f'<circle cx="58" cy="100" r="20" fill="{NV}"/><circle cx="58" cy="100" r="8" fill="#fff"/>'
+            f'<circle cx="150" cy="100" r="20" fill="{NV}"/><circle cx="150" cy="100" r="8" fill="#fff"/>'
+            f'<path d="M30 12 h80" stroke="{OR}" stroke-width="6" stroke-linecap="round"/>'
+            f'<path d="M-34 40 h24 M-46 62 h36 M-30 84 h20" stroke="{CO}" stroke-width="5" stroke-linecap="round" opacity=".85"/>'
+            f'</g>')
+def H_review(x,y):
+    return (f'<g transform="translate({x},{y})">'
+            f'<rect x="0" y="0" width="256" height="170" rx="22" fill="#fff" stroke="#EFE6D7" stroke-width="2.5"/>'
+            f'<circle cx="46" cy="46" r="20" fill="{BL}"/><path d="M46 40 a7 7 0 1 1 0.1 0 M32 60 q14 -12 28 0" stroke="{NV}" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
+            f'<rect x="78" y="32" width="92" height="9" rx="4.5" fill="{NV}"/><rect x="78" y="50" width="60" height="8" rx="4" fill="#C9C3B6"/>'
+            f'<g transform="translate(30,86)">'
+            + "".join(f'<path transform="translate({i*42},0) scale(1.5)" d="M12 2l2.6 5.3 5.9.8-4.3 4.1 1 5.8L12 15.3 6.8 18l1-5.8L3.5 8.1l5.9-.8z" fill="{OR if i<4 else "#E6DFD0"}"/>' for i in range(5)) +
+            f'</g><rect x="30" y="138" width="150" height="8" rx="4" fill="#E6DFD0"/>'
+            f'{badge_check(238,158,24)}</g>')
+def H_chart(x,y):
+    return (f'<g transform="translate({x},{y})">'
+            f'<rect x="0" y="0" width="264" height="184" rx="22" fill="#fff" stroke="#EFE6D7" stroke-width="2.5"/>'
+            f'<rect x="20" y="16" width="96" height="9" rx="4.5" fill="{NV}"/>'
+            f'<g transform="translate(28,150)">'
+            f'<rect x="0" y="-44" width="30" height="44" rx="6" fill="#F0C689"/>'
+            f'<rect x="44" y="-70" width="30" height="70" rx="6" fill="{OR}"/>'
+            f'<rect x="88" y="-56" width="30" height="56" rx="6" fill="{CO}"/>'
+            f'<rect x="132" y="-96" width="30" height="96" rx="6" fill="{GR}"/>'
+            f'<rect x="176" y="-118" width="30" height="118" rx="6" fill="{NV}"/></g>'
+            f'<path d="M36 92 L86 72 L134 84 L196 34" fill="none" stroke="{NV}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'
+            f'<path d="M196 34 l-16 -2 m16 2 l-4 15" stroke="{NV}" stroke-width="4" stroke-linecap="round" opacity=".85"/>'
+            f'</g>')
+
+# ---------- new scene compositions (4 layouts each) ----------
+def c_textchat(v=0):
+    return [H_chat(430,150)+flow(640,300,820,350,GR)+card_booked(830,330)+dots([(300,200,5),(340,420,4),(910,210,5),(240,300,4)]),
+            H_chat(590,150)+flow(560,300,370,350,GR,bend=-70)+card_booked(190,330)+dots([(880,220,5),(860,420,4),(300,210,5)]),
+            H_chat(510,130)+missed_tag(170,220)+flow(380,260,500,220,CO,bend=40)+card_booked(860,370)+dots([(950,220,5),(260,430,4)]),
+            H_chat(510,190)+card_booked(150,380)+flow(410,420,330,410,GR,bend=30)+badge_check(960,240,28)+dots([(920,420,5),(300,180,4)])][v%4]
+def c_van(v=0):
+    return [H_van(480,260)+sun(1000,140,56)+flow(300,400,460,350,OR,bend=-40)+card_booked(160,300)+dots([(900,430,5),(280,220,4)]),
+            H_van(560,260)+sun(200,130,54)+flow(900,400,760,350,OR,bend=-40)+card_booked(870,290)+dots([(300,430,5),(950,220,4)]),
+            H_van(500,230)+moon(180,150,56)+card_booked(860,350)+flow(720,330,850,380,GR,bend=-30)+dots([(280,350,5),(1000,200,4)]),
+            H_van(500,300)+clock(230,200,44)+card_booked(880,380)+flow(320,260,470,320,CO,bend=-50)+dots([(940,240,5),(200,440,4)])][v%4]
+def c_reviews(v=0):
+    return [H_review(470,180)+flow(430,420,350,380,OR,bend=40)+card_booked(170,300)+dots([(900,230,5),(880,440,4),(300,470,4)]),
+            H_review(480,180)+flow(760,420,850,380,OR,bend=40)+card_booked(860,300)+dots([(300,230,5),(320,440,4)]),
+            H_review(450,150)+badge_check(240,240,30)+dots([(880,220,6),(940,320,4),(860,430,5),(260,420,4)]),
+            H_review(490,240)+missed_tag(160,200)+flow(400,300,480,300,GR,bend=-40)+dots([(950,260,5),(900,450,4)])][v%4]
+def c_report(v=0):
+    return [H_chart(460,170)+flow(420,420,340,390,GR,bend=40)+card_booked(160,300)+dots([(900,240,5),(880,430,4)]),
+            H_chart(480,170)+flow(770,420,860,390,GR,bend=40)+card_booked(860,300)+dots([(300,240,5),(320,430,4)]),
+            H_chart(440,140)+badge_check(950,260,30)+dots([(260,240,6),(300,430,4),(980,430,5)]),
+            H_chart(490,230)+clock(240,220,44)+card_booked(880,400)+dots([(950,220,5),(210,430,4)])][v%4]
+
 COMPOSE={
  "best-lead-response-system-for-contractors":(c_contractor,False),
  "locksmith-after-hours-lead-response-that-wins":(c_locksmith,True),
@@ -175,6 +259,10 @@ COMPOSE={
  "automated-estimate-booking-for-contractors":(c_booking,False),
  "ai-lead-qualification-for-home-services":(c_qualification,False),
  "after-hours-answering-service-for-contractors":(c_afterhours,True),
+ "live-text-conversation-that-books":(c_textchat,False),
+ "service-van-on-the-way":(c_van,False),
+ "five-star-reviews-won":(c_reviews,False),
+ "weekly-earnings-report":(c_report,False),
 }
 def scene(slug,v=0):
     fn,night=COMPOSE[slug]

@@ -88,18 +88,26 @@ AFTERHRS="after-hours-answering-service-for-contractors"
 QUALIF  ="ai-lead-qualification-for-home-services"
 BOOKING ="automated-estimate-booking-for-contractors"
 LEADRESP="best-lead-response-system-for-contractors"
+TEXTCHAT="live-text-conversation-that-books"
+VAN     ="service-van-on-the-way"
+REVIEWS ="five-star-reviews-won"
+REPORT  ="weekly-earnings-report"
 # ordered list — FIRST match wins. Keep BOOKING ahead of ANSWERING so "...books jobs" -> calendar.
 THEME_SPECIFIC = [
+ ("review",REVIEWS),("reputation",REVIEWS),("5 star",REVIEWS),("five star",REVIEWS),
+ ("report",REPORT),("dashboard",REPORT),("revenue",REPORT),("roi",REPORT),("earn",REPORT),
+ ("text back",TEXTCHAT),("text-back",TEXTCHAT),("texting",TEXTCHAT),("sms",TEXTCHAT),("by text",TEXTCHAT),
+ ("dispatch",VAN),("on the way",VAN),("on my way",VAN),("crew",VAN),
  ("voicemail",MISSED),("missed call",MISSED),("missed-call",MISSED),("miss call",MISSED),("miss a call",MISSED),("missing call",MISSED),
  ("after hours",AFTERHRS),("after-hours",AFTERHRS),("overnight",AFTERHRS),("24/7",AFTERHRS),("answering service",AFTERHRS),
  ("qualif",QUALIF),("screen",QUALIF),("junk lead",QUALIF),("tire-kick",QUALIF),("filter",QUALIF),
  ("estimate",BOOKING),("booking",BOOKING),("book ",BOOKING),("books ",BOOKING),("schedul",BOOKING),("appointment",BOOKING),("quote",BOOKING),("calendar",BOOKING),("no-show",BOOKING),
- ("answering",AFTERHRS),("call automation",AFTERHRS),("auto-text",AFTERHRS),("text back",AFTERHRS),("pick up",AFTERHRS),
+ ("answering",AFTERHRS),("call automation",AFTERHRS),("auto-text",TEXTCHAT),("pick up",AFTERHRS),
  ("respond",LEADRESP),("response",LEADRESP),("speed to lead",LEADRESP),("how fast",LEADRESP),("fast",LEADRESP),("first to",LEADRESP),("follow up",LEADRESP),("follow-up",LEADRESP),("reply",LEADRESP),("speed",LEADRESP),("convert",LEADRESP),("nurtur",LEADRESP),
 ]
 # generic business terms with no specific topic → ROTATE across story scenes (variety, not one image)
 GENERIC_TERMS = ("lead","contractor","service","business","call","client","customer","sales","grow","revenue","win","job","crm","automat")
-ROTATION = [LEADRESP, MISSED, BOOKING, QUALIF, AFTERHRS]
+ROTATION = [LEADRESP, TEXTCHAT, MISSED, VAN, BOOKING, REVIEWS, QUALIF, REPORT, AFTERHRS]
 
 def classify(title, seed=0):
     t=(title or "").lower()
