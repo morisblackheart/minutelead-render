@@ -87,12 +87,6 @@ LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="16 16 164 164">
 </svg>"""
 
 
-def pick_query(title):
-    t = (title or "").lower()
-    for keys, q in QUERIES:
-        if any(k in t for k in keys):
-            return q
-    return DEFAULT_QUERY
 
 
 UA = "MinuteLeadRender/1.0 (+https://minutelead.ca)"
