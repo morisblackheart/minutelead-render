@@ -21,28 +21,59 @@ PEXELS_KEY = os.environ.get("PEXELS_API_KEY", "")
 
 NAVY = (21, 35, 59)
 
-# title keyword -> photo search query (checked in order, first hit wins)
-QUERIES = [
-    (("hvac", "furnace", "heat", "air condition", "ac "), "hvac technician working"),
-    (("plumb", "pipe", "water heater", "leak"), "plumber working under sink"),
-    (("electri", "panel", "wiring"), "electrician working panel"),
-    (("roof", "shingle"), "roofer working on roof"),
-    (("locksmith", "lockout"), "locksmith door lock"),
-    (("landscap", "lawn"), "landscaper working"),
-    (("clean",), "cleaning service professional"),
-    (("dental", "dentist"), "dental clinic reception"),
-    (("law", "legal"), "law office professional"),
-    (("real estate",), "real estate agent client"),
-    (("salon", "spa"), "salon front desk"),
-    (("gym", "fitness"), "gym front desk"),
-    (("auto", "mechanic", "repair shop"), "auto mechanic shop"),
-    (("contractor", "estimate", "job site", "trades"), "contractor construction worker"),
-    (("call", "phone", "reception", "answering", "text", "voicemail"), "tradesperson answering phone"),
-    (("book", "schedul", "calendar", "appointment"), "small business owner phone calendar"),
-    (("review", "reputation"), "happy customer handshake service"),
-    (("lead", "follow up", "inquir", "customer"), "small business owner working phone"),
+import re as _re
+
+# trade in title -> specific work imagery (word-boundary regex, checked first)
+TRADES = [
+    (r"\bhvac\b|\bfurnace\b|\bno heat\b|\bair condition", "hvac technician air conditioner"),
+    (r"\bplumb|\bpipe\b|\bwater heater\b|\bleak", "plumber working pipes"),
+    (r"\belectric|\bpanel\b|\bwiring\b", "electrician working electrical panel"),
+    (r"\broof", "roofer shingles construction"),
+    (r"\blocksmith\b|\blockout\b", "locksmith keys door"),
+    (r"\blandscap|\blawn\b", "landscaping crew working"),
+    (r"\bclean(er|ing)\b", "professional cleaning service"),
+    (r"\bdent(al|ist)", "dental clinic"),
+    (r"\blaw\b|\blegal\b|\battorney\b", "law office desk"),
+    (r"\breal estate\b|\brealtor\b", "real estate agent house keys"),
+    (r"\bsalon\b|\bspa\b|\bbarber\b", "hair salon interior"),
+    (r"\bgym\b|\bfitness\b", "gym equipment trainer"),
+    (r"\bauto repair\b|\bmechanic\b|\bbody shop\b|\bauto shop\b|\bcar repair\b", "car mechanic garage"),
+    (r"\bpest\b", "pest control technician"),
+    (r"\brestoration\b", "water damage restoration"),
+    (r"\bcontractor|\bconstruction\b|\btrades\b|\bestimate", "contractor construction site"),
 ]
-DEFAULT_QUERY = "tradesperson at work small business"
+
+# topic themes when no trade is named
+TOPICS = [
+    (r"\breview|\breputation\b", "customer handshake happy service"),
+    (r"\bafter hours\b|\bnight\b|\bovernight\b", "work van night technician"),
+    (r"\bbook(ing|ed)?\b|\bschedul|\bcalendar\b|\bappointment", "planner calendar scheduling tools"),
+]
+
+# generic titles rotate through trade imagery (variety from our verticals,
+# not another stock person on a phone)
+GENERIC_POOL = [
+    "plumber service van tools",
+    "electrician tool belt working",
+    "hvac technician equipment",
+    "roofing workers house",
+    "contractor tools workshop",
+    "handyman toolbox home repair",
+    "service technician front door customer",
+    "tradesman work van street",
+]
+
+
+def pick_query(title, seed=0):
+    t = (title or "").lower()
+    for pat, q in TRADES:
+        if _re.search(pat, t):
+            return q
+    for pat, q in TOPICS:
+        if _re.search(pat, t):
+            return q
+    return GENERIC_POOL[seed % len(GENERIC_POOL)]
+
 
 LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="16 16 164 164">
 <rect x="16" y="16" width="164" height="164" rx="36" fill="#15233B"/>
@@ -79,14 +110,14 @@ def fetch_pexels(title, seed):
     """Returns (image_bytes, credit_str). Raises on any failure."""
     if not PEXELS_KEY:
         raise RuntimeError("PEXELS_API_KEY not set")
-    q = pick_query(title)
-    api = ("https://api.pexels.com/v1/search?query=%s&orientation=landscape&size=large&per_page=15"
+    q = pick_query(title, seed)
+    api = ("https://api.pexels.com/v1/search?query=%s&orientation=landscape&size=large&per_page=80"
            % urllib.parse.quote(q))
     data = json.loads(_get(api, headers={"Authorization": PEXELS_KEY}))
     photos = data.get("photos") or []
     if not photos:
         raise RuntimeError("no pexels results for %r" % q)
-    p = photos[seed % len(photos)]
+    p = photos[(seed * 7) % len(photos)]
     src = p["src"].get("large2x") or p["src"]["large"]
     img = _get(src)
     credit = "%s via Pexels (%s)" % (p.get("photographer", ""), p.get("url", ""))
