@@ -64,8 +64,13 @@ def pick_query(title):
     return DEFAULT_QUERY
 
 
+UA = "MinuteLeadRender/1.0 (+https://minutelead.ca)"
+
+
 def _get(url, headers=None, timeout=20):
-    req = urllib.request.Request(url, headers=headers or {})
+    h = {"User-Agent": UA, "Accept": "*/*"}
+    h.update(headers or {})
+    req = urllib.request.Request(url, headers=h)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
 
