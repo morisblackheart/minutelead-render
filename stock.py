@@ -23,56 +23,47 @@ NAVY = (21, 35, 59)
 
 import re as _re
 
-# trade in title -> specific work imagery (word-boundary regex, checked first)
-TRADES = [
-    (r"\bhvac\b|\bfurnace\b|\bno heat\b|\bair condition", "hvac technician air conditioner"),
-    (r"\bplumb|\bpipe\b|\bwater heater\b|\bleak", "plumber working pipes"),
-    (r"\belectric|\bpanel\b|\bwiring\b", "electrician working electrical panel"),
-    (r"\broof", "roofer shingles construction"),
-    (r"\blocksmith\b|\blockout\b", "locksmith keys door"),
-    (r"\blandscap|\blawn\b", "landscaping crew working"),
-    (r"\bclean(er|ing)\b", "professional cleaning service"),
-    (r"\bdent(al|ist)", "dental clinic"),
-    (r"\blaw\b|\blegal\b|\battorney\b", "law office desk"),
-    (r"\breal estate\b|\brealtor\b", "real estate agent house keys"),
-    (r"\bsalon\b|\bspa\b|\bbarber\b", "hair salon interior"),
-    (r"\bgym\b|\bfitness\b", "gym equipment trainer"),
-    (r"\bauto repair\b|\bmechanic\b|\bbody shop\b|\bauto shop\b|\bcar repair\b", "car mechanic garage"),
-    (r"\bpest\b", "pest control technician"),
-    (r"\brestoration\b", "water damage restoration"),
-    (r"\bcontractor|\bconstruction\b|\btrades\b|\bestimate", "contractor construction site"),
-]
+# hand-curated Pexels photo ids per theme (visually reviewed 2026-07-13)
+CURATED = {
+    "phone":       [31387781, 8487722, 8961131, 1078879],
+    "texting":     [1083931, 7641426, 1458283, 4831],
+    "night":       [12635003, 12700835, 38556982, 7511796],
+    "schedule":    [7581018, 7580934, 162583, 6172482],
+    "hvac":        [5463575, 32497161, 5463587, 27134985],
+    "plumber":     [7859953, 29226620, 17063686, 7162333],
+    "electrician": [27928762, 32497160, 27928761, 28950842],
+    "roofer":      [33404248, 37677394, 38028508, 31762405],
+    "locksmith":   [13963754, 101808, 14721, 115642],
+    "contractor":  [8961296, 8482551, 3680959, 4981810],
+    "handshake":   [8486896, 5622309, 8469935, 6720550],
+    "reception":   [6812426, 4269269, 6809657, 6812434],
+}
+DEFAULT_MIX = CURATED["phone"] + CURATED["contractor"] + CURATED["texting"] + CURATED["schedule"]
 
-# topic themes when no trade is named
-TOPICS = [
-    (r"\breview|\breputation\b", "customer handshake happy service"),
-    (r"\bafter hours\b|\bnight\b|\bovernight\b", "work van night technician"),
-    (r"\bbook(ing|ed)?\b|\bschedul|\bcalendar\b|\bappointment", "planner calendar scheduling tools"),
-]
-
-# generic titles rotate through trade imagery (variety from our verticals,
-# not another stock person on a phone)
-GENERIC_POOL = [
-    "plumber service van tools",
-    "electrician tool belt working",
-    "hvac technician equipment",
-    "roofing workers house",
-    "contractor tools workshop",
-    "handyman toolbox home repair",
-    "service technician front door customer",
-    "tradesman work van street",
+# ordered title -> theme rules (first match wins)
+THEME_RULES = [
+    (r"\bhvac\b|\bfurnace\b|\bno heat\b|\bair condition", "hvac"),
+    (r"\bplumb|\bwater heater\b|\bdrain\b|\bleak", "plumber"),
+    (r"\belectric|\bpanel\b|\bwiring\b", "electrician"),
+    (r"\broof", "roofer"),
+    (r"\blocksmith\b|\blockout\b", "locksmith"),
+    (r"\breview|\breputation\b|\bwin(s|ning)?\b", "handshake"),
+    (r"\bafter hours\b|\bnight\b|\bovernight\b|\b24.?7\b", "night"),
+    (r"\bbook(ing|ed|s)?\b|\bschedul|\bcalendar\b|\bappointment|\bestimate", "schedule"),
+    (r"\breception|\banswering service\b", "reception"),
+    (r"\btext(ing)?\b|\bsms\b", "texting"),
+    (r"\bcontractor|\bconstruction\b|\btrades\b", "contractor"),
+    (r"\bcall|\bphone\b|\brespond|\bresponse\b|\banswer|\bmissed\b|\bvoicemail\b", "phone"),
 ]
 
 
-def pick_query(title, seed=0):
+def pick_photo_id(title, seed=0):
     t = (title or "").lower()
-    for pat, q in TRADES:
+    for pat, theme in THEME_RULES:
         if _re.search(pat, t):
-            return q
-    for pat, q in TOPICS:
-        if _re.search(pat, t):
-            return q
-    return GENERIC_POOL[seed % len(GENERIC_POOL)]
+            ids = CURATED[theme]
+            return ids[seed % len(ids)], theme
+    return DEFAULT_MIX[seed % len(DEFAULT_MIX)], "default"
 
 
 LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="16 16 164 164">
@@ -104,17 +95,12 @@ def fetch_pexels(title, seed):
     """Returns (image_bytes, credit_str). Raises on any failure."""
     if not PEXELS_KEY:
         raise RuntimeError("PEXELS_API_KEY not set")
-    q = pick_query(title, seed)
-    api = ("https://api.pexels.com/v1/search?query=%s&orientation=landscape&size=large&per_page=80"
-           % urllib.parse.quote(q))
-    data = json.loads(_get(api, headers={"Authorization": PEXELS_KEY}))
-    photos = data.get("photos") or []
-    if not photos:
-        raise RuntimeError("no pexels results for %r" % q)
-    p = photos[(seed * 7) % len(photos)]
+    pid, theme = pick_photo_id(title, seed)
+    p = json.loads(_get("https://api.pexels.com/v1/photos/%d" % pid,
+                        headers={"Authorization": PEXELS_KEY}))
     src = p["src"].get("large2x") or p["src"]["large"]
     img = _get(src)
-    credit = "%s via Pexels (%s)" % (p.get("photographer", ""), p.get("url", ""))
+    credit = "%s via Pexels (%s) [theme:%s]" % (p.get("photographer", ""), p.get("url", ""), theme)
     return img, credit
 
 
