@@ -15,7 +15,8 @@ def _slugify(s):
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    import generate as _g
+    return {"ok": True, "code": "a46e2c9-groups", "scenes": len(_g.COMPOSE)}
 
 @app.get("/featured")
 def featured(title: str = "", seed: int = -1, w: int = 1200):
