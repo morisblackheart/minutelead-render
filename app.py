@@ -3,7 +3,7 @@
   GET /featured?title=<post title>&seed=<int>&w=<width>  -> image/png (1200x675 by default)
   GET /health                                            -> {"ok": true}
 Classifies the title to a trade scene and rasterizes the SVG with cairosvg (no Chrome)."""
-import hashlib, re, cairosvg, mlscene, stock
+import hashlib, re, cairosvg, mlscene, stock, gptimg
 from fastapi import FastAPI
 from fastapi.responses import Response, JSONResponse
 
@@ -16,7 +16,8 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "a46e2c9-groups", "scenes": len(_g.COMPOSE)}
+    return {"ok": True, "code": "openai-v1", "scenes": len(_g.COMPOSE),
+            "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
 def featured(title: str = "", seed: int = -1, w: int = 1200):
@@ -36,3 +37,21 @@ def featured(title: str = "", seed: int = -1, w: int = 1200):
 def stock_route(title: str = "", seed: int = -1, w: int = 1200):
     """Vector featured image with palette rotation (photo mode retired by owner preference)."""
     return featured(title, seed, w)
+
+@app.get("/ai")
+def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "medium"):
+    """OpenAI (gpt-image-1) featured image. Falls back to the vector scene on ANY
+    failure so the daily pipeline never breaks (reason exposed in X-Fallback-Reason)."""
+    if seed < 0:
+        seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 100000
+    try:
+        png, theme = gptimg.gen(title, seed, w, quality=quality)
+        fname = f"{_slugify(title)}-ai1.png"
+        return Response(content=png, media_type="image/png",
+                        headers={"X-Source": "openai", "X-Theme": theme,
+                                 "Content-Disposition": f'inline; filename="{fname}"'})
+    except Exception as e:
+        resp = featured(title, seed, w)          # vector fallback tier
+        resp.headers["X-Source"] = "vector-fallback"
+        resp.headers["X-Fallback-Reason"] = str(e)[:300]
+        return resp
