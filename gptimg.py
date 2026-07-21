@@ -64,17 +64,17 @@ ILLUS_STYLE = (
 # Steered hard against the "AI look". The negative list is doing real work here:
 # vignette/glow/HDR/CGI-sheen are the giveaways that read as AI-generated.
 PHOTO_STYLE = (
-    "A photorealistic editorial photograph, shot on a full-frame DSLR with a 35mm lens at f/4, "
-    "natural available daylight. Authentic documentary feel: real-world texture, honest materials, "
-    "slight natural imperfection and wear. True-to-life neutral color with a gently warm cast. "
-    "Evenly exposed across the entire frame. "
+    "A vivid, colourful photorealistic editorial photograph, shot on a full-frame DSLR with a 35mm "
+    "lens, beautiful natural light. Rich, saturated, lively colour with real depth and punch, like a "
+    "well-graded magazine feature -- bright and full of life, never flat, dull, muted, grey or washed "
+    "out. Authentic real-world texture and honest materials. Evenly exposed across the entire frame. "
     "Absolutely no vignette, no darkened corners or edge falloff, no radial glow, no spotlight effect. "
-    "No HDR, no glossy CGI sheen, no plastic or waxy surfaces, no over-sharpening, no bloom, "
-    "no heavy bokeh, no oversaturation. Natural shallow depth of field only. "
-    "Candid and unposed, not a posed stock-photo look. "
+    "No HDR halos, no glossy CGI sheen, no plastic or waxy skin, no over-sharpening, no bloom. "
+    "Candid and unposed, not a stiff stock-photo look. "
+    "When people appear, show genuine warm natural expressions and real skin texture with visible "
+    "pores and fine lines -- never airbrushed, never mannequin-like. Correct natural hands. "
     "No text, letters, words, numbers, signage, logos, watermarks, or legible screen content anywhere "
     "in the frame. Any screen is off or shows an indistinct blur. "
-    "If a person appears, show only hands, torso or a turned-away figure -- no close-up faces. "
 )
 
 # ---- prompt libraries -----------------------------------------------------
@@ -105,69 +105,69 @@ ILLUS_PROMPTS = {
 # Themes that recur most carry the most variants.
 PHOTO_PROMPTS = {
     "reception": [
-        "A tidy small-business front desk with a corded phone handset and a headset resting beside it, soft daylight from a nearby window, uncluttered surface.",
-        "A clean reception desk in a small office with a headset resting beside a closed laptop, bright daylight, calm and uncluttered.",
+        "A friendly receptionist wearing a headset at a bright front desk, smiling naturally, leafy green plants and warm wood tones around her, sunlight through a window.",
+        "A cheerful small-business owner in a colourful shirt answering a desk phone in a bright airy office, genuine warm smile, vivid greenery behind.",
     ],
     "phone": [
-        "A smartphone lying face-up on a workbench in a tradesperson's workshop, screen dark, hand tools softly out of focus behind it, clean daylight.",
-        "A smartphone resting on the dashboard of a service van, screen dark, work gloves on the passenger seat, bright light through the windshield.",
-        "A smartphone face-up on a kitchen counter beside a set of house keys, warm afternoon daylight through a window.",
-        "A smartphone resting on a clipboard on a pickup truck tailgate, screen dark, tools and lumber softly out of focus, bright overcast light.",
-        "An older corded desk phone on a small business office desk beside a notepad, soft daylight, clean and uncluttered.",
-        "A smartphone face-down on a workshop bench beside a coffee mug, warm morning light raking across the wood.",
+        "A tradesperson in a bright orange work shirt smiling as he checks his smartphone in a sunlit workshop, colourful tools on a pegboard behind him.",
+        "A smartphone resting on the dashboard of a service van, vivid blue sky and green trees through the windshield, warm sunlight across the dash.",
+        "A smiling homeowner in a bright colourful kitchen taking a phone call, sunlight, a bowl of fruit and green plants on the counter.",
+        "A smartphone on a clipboard on a pickup tailgate, a bright red toolbox and yellow tape measure beside it, vivid daylight.",
+        "A young tradesperson in a high-visibility vest grinning while looking at his phone outside a house, brilliant blue sky, green lawn.",
+        "A smartphone face-up on a workshop bench beside a brightly coloured mug, warm golden light raking across colourful tools.",
     ],
     "texting": [
-        "A tradesperson's hands holding a smartphone, thumb resting mid-message, screen an indistinct blur, work jacket cuff visible, natural daylight.",
-        "A phone held in one hand at a residential job site, screen an indistinct blur, work glove and sleeve visible, bright natural daylight.",
+        "A tradesperson in a colourful plaid shirt smiling as he taps out a text on his phone at a sunlit job site, screen an indistinct blur.",
+        "Close view of hands in tan work gloves holding a phone, screen an indistinct blur, vivid orange safety vest and green grass behind.",
     ],
     "night": [
-        "A service van parked at the curb outside a suburban house at dusk, warm porch light glowing, deep blue evening sky, calm and reassuring.",
-        "A suburban house at night with warm light in the windows and a soft glow on the porch, deep blue sky, calm and safe feeling.",
-        "A quiet residential street at dusk with a service van pulling away, tail lights glowing, deep blue evening sky.",
+        "A service van parked outside a suburban house at golden dusk, warm amber porch light, deep blue and violet sky, rich saturated colour.",
+        "A friendly tradesperson smiling at a brightly lit front door in the evening, warm golden porch light, deep blue twilight sky behind.",
+        "A suburban street at dusk under a vivid orange and purple sky, a service van with glowing tail lights, warm lit windows in the houses.",
     ],
     "schedule": [
-        "A paper day-planner open on a desk beside a coffee mug and a pen, in a bright airy office with abundant daylight from a large window, light walls, clean and well lit, writing not legible.",
-        "A wall-mounted month calendar in a bright workshop office, clean daylight, markings not legible, tidy surroundings.",
-        "A tablet propped upright on a desk showing an indistinct blurred grid, a notebook and pen beside it, bright window light.",
-        "A clipboard holding a job sheet resting on a truck tailgate, bright overcast daylight, writing not legible.",
+        "A bright airy office desk with an open planner, a colourful mug and a vase of fresh flowers, sunlight streaming across, writing not legible.",
+        "A smiling business owner marking a wall calendar in a bright colourful office, natural happy expression, markings not legible.",
+        "A tablet on a desk showing an indistinct blurred grid, beside a bright orange notebook and a green plant, sunlit and vivid.",
+        "A tradesperson in a bright work shirt smiling with a clipboard on a truck tailgate, vivid blue sky, writing not legible.",
     ],
     "hvac": [
-        "An outdoor residential HVAC condenser unit beside a house wall, clean bright daylight, tidy landscaping, crisp and well exposed.",
-        "A wall-mounted home thermostat on a light interior wall, soft daylight, display an indistinct blur, clean and modern.",
+        "An outdoor residential HVAC condenser beside a house, vivid green lawn and colourful garden, brilliant blue sky, crisp sunlight.",
+        "A technician in a blue uniform smiling while servicing a home HVAC unit, bright sunlight, green shrubs, vivid colour.",
     ],
     "plumber": [
-        "Chrome supply pipes and a shutoff valve under a kitchen sink, an adjustable wrench resting alongside, clean even light.",
-        "A residential water heater in a tidy basement utility area, copper pipes above it, clean even light.",
+        "A plumber in a bright blue shirt smiling while working under a modern kitchen sink, warm interior light, colourful tiles.",
+        "Gleaming copper pipes and a bright red shutoff valve in a clean utility room, warm light, rich saturated colour.",
     ],
     "electrician": [
-        "An open residential electrical panel with neat rows of breakers, a multimeter resting on the ledge below, bright even light.",
-        "A coil of electrical cable and hand tools laid out on a workbench, bright clean daylight, tidy and professional.",
+        "An electrician in an orange high-visibility vest smiling beside an open electrical panel, bright even light, colourful wiring.",
+        "Coils of vividly coloured electrical wire and tools laid out on a workbench, bright daylight, rich saturated colour.",
     ],
     "roofer": [
-        "A residential roof of asphalt shingles under clear daylight seen from a low angle against blue sky, clean and sharp.",
-        "An extension ladder leaning against the eaves of a suburban house on a bright clear day, clean and professional.",
+        "A roofer in a bright safety vest working on a residential roof under a brilliant blue sky, warm sunlight, vivid colour.",
+        "A residential roof with warm terracotta shingles against a vivid blue sky, bright sunlight, green treetops at the edge.",
     ],
     "locksmith": [
-        "A close view of a residential door handle and deadbolt with a key in the lock, warm evening light spilling from inside.",
-        "A set of house keys resting on a doorstep beside a newly fitted deadbolt, warm low daylight.",
+        "A locksmith in a colourful work shirt smiling while fitting a new deadbolt on a front door, warm daylight.",
+        "A polished brass deadbolt and keys on a brightly painted front door, warm golden light, rich colour.",
     ],
     "contractor": [
-        "A contractor's pickup truck with a ladder racked on top, parked outside a suburban home on a bright clear day, tidy and professional.",
-        "A tool belt and hard hat resting on a tailgate at a residential job site, bright clear daylight, clean and organised.",
-        "A partially renovated residential interior with tools and materials neatly stacked, bright daylight through bare windows.",
+        "A contractor in a bright orange vest and hard hat smiling in front of a pickup truck at a suburban home, vivid blue sky.",
+        "A colourful tool belt and yellow hard hat on a tailgate at a job site, brilliant sunlight, green lawn.",
+        "Two tradespeople in colourful workwear talking and laughing together at a residential job site, warm sunlight, vivid colour.",
     ],
     "handshake": [
-        "A homeowner and a tradesperson shaking hands in a front doorway, seen from the side at a respectful distance, warm daylight, faces not in close-up.",
-        "A tradesperson and a homeowner standing together on a front porch in conversation, seen from behind at a distance, warm daylight.",
+        "A smiling homeowner and a tradesperson shaking hands warmly in a sunlit front doorway, both faces clearly visible with genuine happy expressions, vivid colour.",
+        "A happy homeowner smiling broadly beside a friendly tradesperson on a front porch, both faces visible, warm golden light, rich colour.",
     ],
     "reporting": [
-        "A laptop open on a desk beside a notebook and pen, the screen showing only an indistinct out-of-focus blur, soft window light.",
-        "A laptop angled away so its screen is not visible, on a bright desk beside a coffee mug and a pen, clean daylight.",
+        "A smiling small-business owner at a bright desk with a laptop, screen an indistinct blur, colourful notebook and a green plant, sunlight.",
+        "A laptop angled away so its screen is not visible on a bright colourful desk with a plant and a warm mug, vivid daylight.",
     ],
     "default": [
-        "A local service van parked on a residential street with a smartphone resting on the driver's seat, natural daylight, clean and professional.",
-        "A tidy home-service business owner's desk with a closed laptop, a coffee mug and a set of van keys, bright daylight.",
-        "A service van parked in the driveway of a suburban home on a clear bright day, clean and professional.",
+        "A brightly coloured service van parked on a sunny residential street, vivid blue sky, green lawns, a phone on the driver's seat.",
+        "A cheerful home-service business owner smiling in a bright office with a closed laptop, a colourful mug and van keys.",
+        "A service van in a driveway on a brilliant sunny day, vivid colour, green trees and blue sky.",
     ],
 }
 
@@ -185,6 +185,16 @@ PHOTO_HINTS = [
     "Shot from a high three-quarter angle looking down.",
     "Subject offset to the left with clean open space on the right.",
     "Subject offset to the right with clean open space on the left.",
+]
+
+# A second seed-varied axis, independent of subject and framing. Light is what
+# stops 24 posts reading as one long grey afternoon.
+PHOTO_LIGHT = [
+    "Warm golden-hour sunlight with long soft shadows and rich amber tones.",
+    "Brilliant crisp midday sun under a vivid blue sky, strong clean colour.",
+    "Bright luminous overcast light, soft but richly saturated.",
+    "Warm sunlight streaming through a window, glowing and colourful.",
+    "Fresh clear morning light with vivid, punchy colour.",
 ]
 
 STYLES = {
@@ -209,9 +219,12 @@ def build_prompt(title, theme, seed, style="photo"):
     if isinstance(subs, str):
         subs = [subs]
     subject = subs[stock._stable(seed) % len(subs)]
-    # offset the hint so subject and composition don't move in lockstep
+    # offset each axis so subject, framing and light don't move in lockstep
     hint = hints[stock._stable(seed + 7) % len(hints)]
-    return preamble + subject + " " + hint
+    light = ""
+    if style == "photo":
+        light = " " + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)]
+    return preamble + subject + " " + hint + light
 
 
 # ---- OpenAI call ----------------------------------------------------------
