@@ -16,6 +16,7 @@ import base64
 import io
 import json
 import os
+import urllib.error
 import urllib.request
 
 import cairosvg
@@ -103,8 +104,18 @@ def _openai_image(prompt, size="1536x1024", quality="medium", timeout=120):
         OPENAI_URL, data=body, method="POST",
         headers={"Authorization": "Bearer " + OPENAI_KEY,
                  "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        data = json.loads(r.read())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        # surface the API's real message (e.g. billing_hard_limit_reached) in
+        # X-Fallback-Reason -- a bare "HTTP Error 400" is undiagnosable from Make.
+        try:
+            err = json.loads(e.read()).get("error", {})
+            detail = "%s: %s" % (err.get("code") or e.code, err.get("message", ""))
+        except Exception:
+            detail = "HTTP %s" % e.code
+        raise RuntimeError("openai %s" % detail) from None
     return base64.b64decode(data["data"][0]["b64_json"])
 
 
