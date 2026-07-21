@@ -68,7 +68,9 @@ THEME_PROMPTS = {
     "roofer": "A stylized house roof with shingles and a sun, a small booked card, bright and approachable.",
     "locksmith": "A stylized door lock and key with a small green check, calm and trustworthy, a hint of night.",
     "contractor": "A stylized hub with lines routing several small leads into a single calendar or booked card, suggesting lead flow captured.",
-    "handshake": "Five stars filling gold from left to right, with small platform chips implied, a happy-outcome feel.",
+    # NB: must be all five stars COMPLETELY filled -- "filling left to right" made
+    # gpt-image-1 render 4 filled + 1 empty, which reads as a 4-star review.
+    "handshake": "Exactly five identical gold stars in a row, every one of them completely filled in solid gold, none empty or partially filled, with a happy-outcome feel.",
     "reporting": "A clean bar chart trending upward, the tallest bar green, an upward arrow, suggesting recovered revenue.",
     "default": "A local-service business owner's phone on a warm desk with a small green checkmark card, a general 'inbound handled' feel.",
 }
