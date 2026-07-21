@@ -16,7 +16,7 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "openai-v9-people", "scenes": len(_g.COMPOSE),
+    return {"ok": True, "code": "openai-v10-bespoke", "scenes": len(_g.COMPOSE),
             "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
@@ -40,7 +40,7 @@ def stock_route(title: str = "", seed: int = -1, w: int = 1200):
 
 @app.get("/ai")
 def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "medium",
-             style: str = "photo", grad: int = 0):
+             style: str = "photo", grad: int = 0, pid: int = 0):
     """OpenAI (gpt-image-1) featured image. style=photo (photorealistic, default) or
     style=illus (flat brand vector). grad=1 adds the navy bottom gradient under the logo.
     Falls back to the vector scene on ANY failure so the daily pipeline never breaks
@@ -48,12 +48,14 @@ def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "med
     if seed < 0:
         seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 100000
     try:
-        png, theme, variant = gptimg.gen(title, seed, w, quality=quality,
-                                         style=style, grad=bool(grad))
+        png, theme, variant, subject = gptimg.gen(title, seed, w, quality=quality,
+                                                  style=style, grad=bool(grad), pid=pid)
         fname = f"{_slugify(title)}-ai1.png"
         return Response(content=png, media_type="image/png",
                         headers={"X-Source": "openai", "X-Theme": theme,
                                  "X-Style": style, "X-Variant": str(variant),
+                                 "X-Bespoke": "1" if subject != "library" else "0",
+                                 "X-Subject": subject[:180].encode("ascii", "ignore").decode(),
                                  "Content-Disposition": f'inline; filename="{fname}"'})
     except Exception as e:
         resp = featured(title, seed, w)          # vector fallback tier

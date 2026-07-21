@@ -21,6 +21,7 @@ import base64
 import io
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -31,6 +32,12 @@ import stock  # reuse THEME_RULES, cover_crop, brand_treatment, LOGO_SVG, _stabl
 
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_URL = "https://api.openai.com/v1/images/generations"
+OPENAI_CHAT = "https://api.openai.com/v1/chat/completions"
+PROMPT_MODEL = "gpt-4o-mini"
+WP_API = "https://minutelead.ca/wp-json/wp/v2"
+# Cloudflare in front of minutelead.ca 403s urllib's default UA ("error code: 1010").
+BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 
 # ---- classifier -----------------------------------------------------------
 # `reporting` isn't a stock/Pexels theme (no curated photos), so it lives here.
@@ -216,6 +223,92 @@ STYLES = {
 }
 
 
+# ---- bespoke per-post prompt (tier 1) -------------------------------------
+# The theme library below is a coarse fallback: 13 regex themes over a small
+# variant pool means many posts converge on the same handful of scenes, and the
+# theme comes from the TITLE only -- it never reads what the post argues. This
+# reads the actual post and writes one scene for it.
+
+BRIEF = """You write image-generation prompts for the featured image on a blog post.
+
+The blog belongs to MinuteLead, which sells AI phone answering and missed-call \
+text-back to local home-service businesses (HVAC, plumbing, electrical, roofing, \
+locksmiths, general contractors).
+
+Read the post below and write ONE sentence, at most 45 words, describing a single \
+photograph that illustrates THAT POST'S SPECIFIC ANGLE -- not a generic image about \
+the business in general.
+
+Rules:
+- Describe a concrete real scene: what is in frame, where it is, what is happening.
+- Decide whether a person belongs. Many posts read better as an object or place: a \
+phone on a workbench, a van at dusk, an empty desk, a calendar, a doorway, a tool on \
+a tailgate. Include a person ONLY when the post is genuinely about people dealing \
+with each other. Do NOT default to a smiling worker looking at the camera -- that \
+shot is heavily overused, avoid it unless it is truly the best fit.
+- If you do include a person, specify their age and gender, and prefer them absorbed \
+in what they are doing rather than posing.
+- Be strongly different from a typical stock photo. Vary setting, time of day, trade, \
+season, object and viewpoint.
+- Name specific colourful details (a red toolbox, a mustard front door, green hedge).
+- The image must contain NO text, signage, numbers, logos, or readable screens.
+- Reply with the sentence ONLY. No preamble, no quotes."""
+
+
+def _strip_html(s):
+    s = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", s or "", flags=re.S | re.I)
+    s = re.sub(r"<[^>]+>", " ", s)
+    s = re.sub(r"&[a-z]+;|&#\d+;", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def fetch_post(pid, timeout=25):
+    """Title + plain-text body for a published post. Raises on failure."""
+    req = urllib.request.Request(
+        "%s/posts/%d?_fields=title,excerpt,content" % (WP_API, int(pid)),
+        headers={"User-Agent": BROWSER_UA, "Connection": "close"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.loads(r.read())
+    title = _strip_html(d.get("title", {}).get("rendered", ""))
+    body = _strip_html(d.get("excerpt", {}).get("rendered", "")) + " " + \
+        _strip_html(d.get("content", {}).get("rendered", ""))
+    return title, body.strip()[:4000]
+
+
+def llm_subject(title, body, seed, timeout=60):
+    """Ask the text model for one bespoke scene sentence. Raises on failure."""
+    if not OPENAI_KEY:
+        raise RuntimeError("OPENAI_API_KEY not set")
+    payload = {
+        "model": PROMPT_MODEL,
+        "messages": [
+            {"role": "system", "content": BRIEF},
+            {"role": "user", "content": "TITLE: %s\n\nPOST:\n%s" % (title, body)},
+        ],
+        "temperature": 0.9,      # variety across posts
+        "seed": int(seed) % 2_000_000_000,   # ...but reproducible per post
+        "max_tokens": 120,
+    }
+    req = urllib.request.Request(
+        OPENAI_CHAT, data=json.dumps(payload).encode(), method="POST",
+        headers={"Authorization": "Bearer " + OPENAI_KEY,
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            d = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        try:
+            err = json.loads(e.read()).get("error", {})
+            detail = "%s: %s" % (err.get("code") or e.code, err.get("message", ""))
+        except Exception:
+            detail = "HTTP %s" % e.code
+        raise RuntimeError("promptgen %s" % detail) from None
+    out = d["choices"][0]["message"]["content"].strip().strip('"').strip()
+    if len(out) < 25:
+        raise RuntimeError("promptgen returned too little: %r" % out[:80])
+    return out
+
+
 def variant_index(theme, seed, style="photo"):
     """Which subject variant a given seed selects. Exposed so the backfill planner
     can choose seeds that avoid repeating a subject in adjacent posts."""
@@ -308,20 +401,41 @@ def brand_treatment_logo(im):
 
 
 # ---- public entrypoint ----------------------------------------------------
-def gen(title, seed, w=1200, quality="medium", style="photo", grad=False):
-    """Returns (png_bytes, theme). Raises on any OpenAI/decode failure so the
-    /ai route can fall back to the vector scene.
+def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0):
+    """Returns (png_bytes, theme, variant, subject). Raises on any OpenAI/decode
+    failure so the /ai route can fall back to the vector scene.
+
+    Subject selection, best first:
+      1. pid given  -> read the actual post, have the text model write one bespoke
+                       scene for it (varies per post, decides people vs objects)
+      2. otherwise  -> the coarse regex theme library
+    Tier 1 failures degrade quietly to tier 2 rather than losing the image.
 
     grad=True uses stock.brand_treatment (navy bottom gradient + logo), which
     aids logo legibility over a busy photo; grad=False is logo + baseline only.
     """
     h = int(w * 9 / 16)
     theme = classify(title)
+    variant = variant_index(theme, seed, style)
+    subject_src = "library"
     prompt = build_prompt(title, theme, seed, style)
+
+    if pid and style == "photo":
+        try:
+            ptitle, body = fetch_post(pid)
+            subject = llm_subject(ptitle or title, body, seed)
+            preamble, _, hints = STYLES["photo"]
+            prompt = (preamble + subject + " "
+                      + hints[stock._stable(seed + 7) % len(hints)] + " "
+                      + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)])
+            subject_src = subject
+        except Exception:
+            pass                      # keep the library prompt already built
+
     raw = _openai_image(prompt, quality=quality)
     im = Image.open(io.BytesIO(raw))
     im = stock.cover_crop(im, w, h)
     im = stock.brand_treatment(im) if grad else brand_treatment_logo(im)
     out = io.BytesIO()
     im.save(out, "PNG", optimize=True)
-    return out.getvalue(), theme, variant_index(theme, seed, style)
+    return out.getvalue(), theme, variant, subject_src
