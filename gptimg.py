@@ -25,7 +25,7 @@ import urllib.error
 import urllib.request
 
 import cairosvg
-from PIL import Image
+from PIL import Image, ImageDraw
 
 import stock  # reuse THEME_RULES, cover_crop, brand_treatment, LOGO_SVG, _stable
 
@@ -104,7 +104,7 @@ PHOTO_PROMPTS = {
     "phone": "A smartphone lying face-up on a workbench in a tradesperson's workshop, screen dark, hand tools softly out of focus behind it, clean daylight.",
     "texting": "A tradesperson's hands holding a smartphone, thumb resting mid-message, screen an indistinct blur, work jacket cuff visible, natural daylight.",
     "night": "A service van parked at the curb outside a suburban house at dusk, warm porch light glowing, deep blue evening sky, calm and reassuring.",
-    "schedule": "A paper day-planner open on a workshop desk beside a coffee mug and a pen, soft morning light across the page, writing not legible.",
+    "schedule": "A paper day-planner open on a desk beside a coffee mug and a pen, in a bright airy office with abundant daylight from a large window, light walls, clean and well lit, writing not legible.",
     "hvac": "An outdoor residential HVAC condenser unit beside a house wall, clean bright daylight, tidy landscaping, crisp and well exposed.",
     "plumber": "Chrome supply pipes and a shutoff valve under a kitchen sink, an adjustable wrench resting alongside, clean even light.",
     "electrician": "An open residential electrical panel with neat rows of breakers, a multimeter resting on the ledge below, bright even light.",
@@ -192,7 +192,22 @@ def brand_treatment_logo(im):
                                 output_width=logo_px, output_height=logo_px)
     logo = Image.open(io.BytesIO(logo_png)).convert("RGBA")
     margin = h // 22
-    im.paste(logo, (w - logo_px - margin, h - logo_px - margin - bar_h), logo)
+    x, y = w - logo_px - margin, h - logo_px - margin - bar_h
+
+    # The logo tile is navy, so on a dark photo (dusk, dim workshop) it sinks into
+    # the background and the brand mark disappears. Sample what's actually behind
+    # it and, only when that's dark, lay down a soft light chip for contrast.
+    # Light images are left exactly as-is.
+    patch = im.crop((x, y, x + logo_px, y + logo_px)).convert("L")
+    if sum(patch.getdata()) / (logo_px * logo_px) < 110:
+        pad = max(3, logo_px // 14)
+        chip = Image.new("RGBA", (logo_px + pad * 2, logo_px + pad * 2), (0, 0, 0, 0))
+        ImageDraw.Draw(chip).rounded_rectangle(
+            [0, 0, chip.size[0] - 1, chip.size[1] - 1],
+            radius=int(logo_px * 0.28), fill=(251, 248, 242, 225))
+        im.paste(chip, (x - pad, y - pad), chip)
+
+    im.paste(logo, (x, y), logo)
     return im.convert("RGB")
 
 
