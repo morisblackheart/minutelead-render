@@ -187,6 +187,19 @@ PHOTO_HINTS = [
     "Subject offset to the right with clean open space on the left.",
 ]
 
+# Without this the model defaults to the same archetype every time (smiling
+# bearded man, 30s) -- across 24 posts that reads as one recurring stock actor.
+# Phrased conditionally so it's harmless on the object-only subjects.
+PHOTO_PEOPLE = [
+    "If a person appears, they are a woman in her thirties.",
+    "If a person appears, they are a man in his fifties with greying hair.",
+    "If a person appears, they are a woman in her forties.",
+    "If a person appears, they are a young man in his twenties, clean-shaven.",
+    "If a person appears, they are a man in his forties.",
+    "If a person appears, they are a woman in her fifties.",
+    "If a person appears, they are a man in his thirties.",
+]
+
 # A second seed-varied axis, independent of subject and framing. Light is what
 # stops 24 posts reading as one long grey afternoon.
 PHOTO_LIGHT = [
@@ -221,10 +234,11 @@ def build_prompt(title, theme, seed, style="photo"):
     subject = subs[stock._stable(seed) % len(subs)]
     # offset each axis so subject, framing and light don't move in lockstep
     hint = hints[stock._stable(seed + 7) % len(hints)]
-    light = ""
+    extra = ""
     if style == "photo":
-        light = " " + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)]
-    return preamble + subject + " " + hint + light
+        extra = (" " + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)]
+                 + " " + PHOTO_PEOPLE[stock._stable(seed + 29) % len(PHOTO_PEOPLE)])
+    return preamble + subject + " " + hint + extra
 
 
 # ---- OpenAI call ----------------------------------------------------------

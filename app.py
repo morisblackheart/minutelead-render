@@ -16,7 +16,7 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "openai-v8-vivid", "scenes": len(_g.COMPOSE),
+    return {"ok": True, "code": "openai-v9-people", "scenes": len(_g.COMPOSE),
             "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
