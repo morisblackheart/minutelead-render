@@ -99,21 +99,76 @@ ILLUS_PROMPTS = {
     "default": "A local-service business owner's phone on a warm desk with a small green checkmark card, a general 'inbound handled' feel.",
 }
 
+# Each theme holds a LIST of interchangeable subjects, picked by seed. This is what
+# stops repetition: `phone` matches 6 of the 24 live posts and `schedule` 4, so a
+# single subject per theme would put six near-identical photos down the blog grid.
+# Themes that recur most carry the most variants.
 PHOTO_PROMPTS = {
-    "reception": "A tidy small-business front desk with a corded phone handset and a headset resting beside it, soft daylight from a nearby window, uncluttered surface.",
-    "phone": "A smartphone lying face-up on a workbench in a tradesperson's workshop, screen dark, hand tools softly out of focus behind it, clean daylight.",
-    "texting": "A tradesperson's hands holding a smartphone, thumb resting mid-message, screen an indistinct blur, work jacket cuff visible, natural daylight.",
-    "night": "A service van parked at the curb outside a suburban house at dusk, warm porch light glowing, deep blue evening sky, calm and reassuring.",
-    "schedule": "A paper day-planner open on a desk beside a coffee mug and a pen, in a bright airy office with abundant daylight from a large window, light walls, clean and well lit, writing not legible.",
-    "hvac": "An outdoor residential HVAC condenser unit beside a house wall, clean bright daylight, tidy landscaping, crisp and well exposed.",
-    "plumber": "Chrome supply pipes and a shutoff valve under a kitchen sink, an adjustable wrench resting alongside, clean even light.",
-    "electrician": "An open residential electrical panel with neat rows of breakers, a multimeter resting on the ledge below, bright even light.",
-    "roofer": "A residential roof of asphalt shingles under clear daylight seen from a low angle against blue sky, clean and sharp.",
-    "locksmith": "A close view of a residential door handle and deadbolt with a key in the lock, warm evening light spilling from inside.",
-    "contractor": "A contractor's pickup truck with a ladder racked on top, parked outside a suburban home on a bright clear day, tidy and professional.",
-    "handshake": "A homeowner and a tradesperson shaking hands in a front doorway, seen from the side at a respectful distance, warm daylight, faces not in close-up.",
-    "reporting": "A laptop open on a desk beside a notebook and pen, the screen showing only an indistinct out-of-focus blur, soft window light.",
-    "default": "A local service van parked on a residential street with a smartphone resting on the driver's seat, natural daylight, clean and professional.",
+    "reception": [
+        "A tidy small-business front desk with a corded phone handset and a headset resting beside it, soft daylight from a nearby window, uncluttered surface.",
+        "A clean reception desk in a small office with a headset resting beside a closed laptop, bright daylight, calm and uncluttered.",
+    ],
+    "phone": [
+        "A smartphone lying face-up on a workbench in a tradesperson's workshop, screen dark, hand tools softly out of focus behind it, clean daylight.",
+        "A smartphone resting on the dashboard of a service van, screen dark, work gloves on the passenger seat, bright light through the windshield.",
+        "A smartphone face-up on a kitchen counter beside a set of house keys, warm afternoon daylight through a window.",
+        "A smartphone resting on a clipboard on a pickup truck tailgate, screen dark, tools and lumber softly out of focus, bright overcast light.",
+        "An older corded desk phone on a small business office desk beside a notepad, soft daylight, clean and uncluttered.",
+        "A smartphone face-down on a workshop bench beside a coffee mug, warm morning light raking across the wood.",
+    ],
+    "texting": [
+        "A tradesperson's hands holding a smartphone, thumb resting mid-message, screen an indistinct blur, work jacket cuff visible, natural daylight.",
+        "A phone held in one hand at a residential job site, screen an indistinct blur, work glove and sleeve visible, bright natural daylight.",
+    ],
+    "night": [
+        "A service van parked at the curb outside a suburban house at dusk, warm porch light glowing, deep blue evening sky, calm and reassuring.",
+        "A suburban house at night with warm light in the windows and a soft glow on the porch, deep blue sky, calm and safe feeling.",
+        "A quiet residential street at dusk with a service van pulling away, tail lights glowing, deep blue evening sky.",
+    ],
+    "schedule": [
+        "A paper day-planner open on a desk beside a coffee mug and a pen, in a bright airy office with abundant daylight from a large window, light walls, clean and well lit, writing not legible.",
+        "A wall-mounted month calendar in a bright workshop office, clean daylight, markings not legible, tidy surroundings.",
+        "A tablet propped upright on a desk showing an indistinct blurred grid, a notebook and pen beside it, bright window light.",
+        "A clipboard holding a job sheet resting on a truck tailgate, bright overcast daylight, writing not legible.",
+    ],
+    "hvac": [
+        "An outdoor residential HVAC condenser unit beside a house wall, clean bright daylight, tidy landscaping, crisp and well exposed.",
+        "A wall-mounted home thermostat on a light interior wall, soft daylight, display an indistinct blur, clean and modern.",
+    ],
+    "plumber": [
+        "Chrome supply pipes and a shutoff valve under a kitchen sink, an adjustable wrench resting alongside, clean even light.",
+        "A residential water heater in a tidy basement utility area, copper pipes above it, clean even light.",
+    ],
+    "electrician": [
+        "An open residential electrical panel with neat rows of breakers, a multimeter resting on the ledge below, bright even light.",
+        "A coil of electrical cable and hand tools laid out on a workbench, bright clean daylight, tidy and professional.",
+    ],
+    "roofer": [
+        "A residential roof of asphalt shingles under clear daylight seen from a low angle against blue sky, clean and sharp.",
+        "An extension ladder leaning against the eaves of a suburban house on a bright clear day, clean and professional.",
+    ],
+    "locksmith": [
+        "A close view of a residential door handle and deadbolt with a key in the lock, warm evening light spilling from inside.",
+        "A set of house keys resting on a doorstep beside a newly fitted deadbolt, warm low daylight.",
+    ],
+    "contractor": [
+        "A contractor's pickup truck with a ladder racked on top, parked outside a suburban home on a bright clear day, tidy and professional.",
+        "A tool belt and hard hat resting on a tailgate at a residential job site, bright clear daylight, clean and organised.",
+        "A partially renovated residential interior with tools and materials neatly stacked, bright daylight through bare windows.",
+    ],
+    "handshake": [
+        "A homeowner and a tradesperson shaking hands in a front doorway, seen from the side at a respectful distance, warm daylight, faces not in close-up.",
+        "A tradesperson and a homeowner standing together on a front porch in conversation, seen from behind at a distance, warm daylight.",
+    ],
+    "reporting": [
+        "A laptop open on a desk beside a notebook and pen, the screen showing only an indistinct out-of-focus blur, soft window light.",
+        "A laptop angled away so its screen is not visible, on a bright desk beside a coffee mug and a pen, clean daylight.",
+    ],
+    "default": [
+        "A local service van parked on a residential street with a smartphone resting on the driver's seat, natural daylight, clean and professional.",
+        "A tidy home-service business owner's desk with a closed laptop, a coffee mug and a set of van keys, bright daylight.",
+        "A service van parked in the driveway of a suburban home on a clear bright day, clean and professional.",
+    ],
 }
 
 # seed-varied compositional hints, per style
@@ -138,10 +193,24 @@ STYLES = {
 }
 
 
+def variant_index(theme, seed, style="photo"):
+    """Which subject variant a given seed selects. Exposed so the backfill planner
+    can choose seeds that avoid repeating a subject in adjacent posts."""
+    _, prompts, _ = STYLES.get(style, STYLES["photo"])
+    subs = prompts.get(theme, prompts["default"])
+    if isinstance(subs, str):
+        return 0
+    return stock._stable(seed) % len(subs)
+
+
 def build_prompt(title, theme, seed, style="photo"):
     preamble, prompts, hints = STYLES.get(style, STYLES["photo"])
-    subject = prompts.get(theme, prompts["default"])
-    hint = hints[stock._stable(seed) % len(hints)]
+    subs = prompts.get(theme, prompts["default"])
+    if isinstance(subs, str):
+        subs = [subs]
+    subject = subs[stock._stable(seed) % len(subs)]
+    # offset the hint so subject and composition don't move in lockstep
+    hint = hints[stock._stable(seed + 7) % len(hints)]
     return preamble + subject + " " + hint
 
 
@@ -228,4 +297,4 @@ def gen(title, seed, w=1200, quality="medium", style="photo", grad=False):
     im = stock.brand_treatment(im) if grad else brand_treatment_logo(im)
     out = io.BytesIO()
     im.save(out, "PNG", optimize=True)
-    return out.getvalue(), theme
+    return out.getvalue(), theme, variant_index(theme, seed, style)

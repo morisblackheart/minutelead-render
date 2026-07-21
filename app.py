@@ -16,7 +16,7 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "openai-v6-photo", "scenes": len(_g.COMPOSE),
+    return {"ok": True, "code": "openai-v7-variants", "scenes": len(_g.COMPOSE),
             "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
@@ -48,12 +48,12 @@ def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "med
     if seed < 0:
         seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 100000
     try:
-        png, theme = gptimg.gen(title, seed, w, quality=quality,
-                                style=style, grad=bool(grad))
+        png, theme, variant = gptimg.gen(title, seed, w, quality=quality,
+                                         style=style, grad=bool(grad))
         fname = f"{_slugify(title)}-ai1.png"
         return Response(content=png, media_type="image/png",
                         headers={"X-Source": "openai", "X-Theme": theme,
-                                 "X-Style": style,
+                                 "X-Style": style, "X-Variant": str(variant),
                                  "Content-Disposition": f'inline; filename="{fname}"'})
     except Exception as e:
         resp = featured(title, seed, w)          # vector fallback tier
