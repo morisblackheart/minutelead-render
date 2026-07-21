@@ -1,13 +1,18 @@
 """OpenAI (gpt-image-1) featured-image generator with MinuteLead brand treatment.
 
 GET /ai?title=<post title>&seed=<int>&w=<width>&quality=<medium|high>
+       &style=<photo|illus>&grad=<0|1>
   1. Classifies the title -> theme (reuses stock.THEME_RULES, adds a `reporting` theme).
   2. Builds a brand-locked prompt: fixed STYLE preamble + per-theme subject + seed-varied
      compositional hint (so the same theme differs across posts).
   3. Calls the OpenAI Images API (gpt-image-1, 1536x1024) -> base64 PNG.
-  4. cover_crop to 1200x675, applies the logo mark + orange baseline (NO navy gradient:
-     AI illustrations are already rich; the gradient was only for photo-text legibility).
-  5. Returns PNG bytes + the chosen theme.
+  4. cover_crop to 1200x675, applies the brand treatment.
+
+Two styles:
+  * `illus` -- flat vector, locked to the brand palette on the warm paper background.
+  * `photo` -- photorealistic editorial photography (default). Deliberately steered away
+    from the "AI look": no vignette, no radial glow, no HDR, no glossy CGI sheen. Screens
+    and signage are kept illegible so the model never renders garbled text.
 
 The /ai route falls back to the vector scene on ANY failure so the pipeline never breaks.
 OPENAI_API_KEY lives only as a Cloud Run env var (never committed).
@@ -22,7 +27,7 @@ import urllib.request
 import cairosvg
 from PIL import Image
 
-import stock  # reuse THEME_RULES, cover_crop, LOGO_SVG, _stable
+import stock  # reuse THEME_RULES, cover_crop, brand_treatment, LOGO_SVG, _stable
 
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_URL = "https://api.openai.com/v1/images/generations"
@@ -45,8 +50,8 @@ def classify(title):
     return "default"
 
 
-# ---- prompt library (§6) --------------------------------------------------
-STYLE = (
+# ---- style preambles ------------------------------------------------------
+ILLUS_STYLE = (
     "Flat modern vector illustration, minimalist and clean, one clear subject centered with "
     "generous negative space, soft long shadows, rounded friendly shapes. Warm off-white paper "
     "background (#FBF8F2) with a faint soft radial glow (#FDEAD0) at the top center. Strictly limited "
@@ -56,7 +61,24 @@ STYLE = (
     "No photorealism, no 3D rendering. Editorial, calm, professional. "
 )
 
-THEME_PROMPTS = {
+# Steered hard against the "AI look". The negative list is doing real work here:
+# vignette/glow/HDR/CGI-sheen are the giveaways that read as AI-generated.
+PHOTO_STYLE = (
+    "A photorealistic editorial photograph, shot on a full-frame DSLR with a 35mm lens at f/4, "
+    "natural available daylight. Authentic documentary feel: real-world texture, honest materials, "
+    "slight natural imperfection and wear. True-to-life neutral color with a gently warm cast. "
+    "Evenly exposed across the entire frame. "
+    "Absolutely no vignette, no darkened corners or edge falloff, no radial glow, no spotlight effect. "
+    "No HDR, no glossy CGI sheen, no plastic or waxy surfaces, no over-sharpening, no bloom, "
+    "no heavy bokeh, no oversaturation. Natural shallow depth of field only. "
+    "Candid and unposed, not a posed stock-photo look. "
+    "No text, letters, words, numbers, signage, logos, watermarks, or legible screen content anywhere "
+    "in the frame. Any screen is off or shows an indistinct blur. "
+    "If a person appears, show only hands, torso or a turned-away figure -- no close-up faces. "
+)
+
+# ---- prompt libraries -----------------------------------------------------
+ILLUS_PROMPTS = {
     "reception": "A friendly rounded phone or headset icon glowing softly, a small speech bubble with a green check, suggesting a call answered instantly.",
     "phone": "A smartphone with a missed-call badge turning into a green checkmark, a soft orange pulse ring around it, one small notification card.",
     "texting": "A phone showing two chat bubbles, one incoming gray and one outgoing orange, with a green check, suggesting an instant text reply.",
@@ -77,20 +99,50 @@ THEME_PROMPTS = {
     "default": "A local-service business owner's phone on a warm desk with a small green checkmark card, a general 'inbound handled' feel.",
 }
 
-# seed-varied compositional hints so the same theme looks different across posts
-COMPOSITION_HINTS = [
+PHOTO_PROMPTS = {
+    "reception": "A tidy small-business front desk with a corded phone handset and a headset resting beside it, soft daylight from a nearby window, uncluttered surface.",
+    "phone": "A smartphone lying face-up on a workbench in a tradesperson's workshop, screen dark, hand tools softly out of focus behind it, clean daylight.",
+    "texting": "A tradesperson's hands holding a smartphone, thumb resting mid-message, screen an indistinct blur, work jacket cuff visible, natural daylight.",
+    "night": "A service van parked at the curb outside a suburban house at dusk, warm porch light glowing, deep blue evening sky, calm and reassuring.",
+    "schedule": "A paper day-planner open on a workshop desk beside a coffee mug and a pen, soft morning light across the page, writing not legible.",
+    "hvac": "An outdoor residential HVAC condenser unit beside a house wall, clean bright daylight, tidy landscaping, crisp and well exposed.",
+    "plumber": "Chrome supply pipes and a shutoff valve under a kitchen sink, an adjustable wrench resting alongside, clean even light.",
+    "electrician": "An open residential electrical panel with neat rows of breakers, a multimeter resting on the ledge below, bright even light.",
+    "roofer": "A residential roof of asphalt shingles under clear daylight seen from a low angle against blue sky, clean and sharp.",
+    "locksmith": "A close view of a residential door handle and deadbolt with a key in the lock, warm evening light spilling from inside.",
+    "contractor": "A contractor's pickup truck with a ladder racked on top, parked outside a suburban home on a bright clear day, tidy and professional.",
+    "handshake": "A homeowner and a tradesperson shaking hands in a front doorway, seen from the side at a respectful distance, warm daylight, faces not in close-up.",
+    "reporting": "A laptop open on a desk beside a notebook and pen, the screen showing only an indistinct out-of-focus blur, soft window light.",
+    "default": "A local service van parked on a residential street with a smartphone resting on the driver's seat, natural daylight, clean and professional.",
+}
+
+# seed-varied compositional hints, per style
+ILLUS_HINTS = [
     "Elements arranged diagonally across the frame.",
     "Centered symmetrical composition.",
     "Subject slightly left with open space on the right.",
     "Subject slightly right with open space on the left.",
     "Subject high in the frame with a wide calm foreground.",
 ]
+PHOTO_HINTS = [
+    "Shot straight on at eye level.",
+    "Shot from a slightly low angle.",
+    "Shot from a high three-quarter angle looking down.",
+    "Subject offset to the left with clean open space on the right.",
+    "Subject offset to the right with clean open space on the left.",
+]
+
+STYLES = {
+    "illus": (ILLUS_STYLE, ILLUS_PROMPTS, ILLUS_HINTS),
+    "photo": (PHOTO_STYLE, PHOTO_PROMPTS, PHOTO_HINTS),
+}
 
 
-def build_prompt(title, theme, seed):
-    subject = THEME_PROMPTS.get(theme, THEME_PROMPTS["default"])
-    hint = COMPOSITION_HINTS[stock._stable(seed) % len(COMPOSITION_HINTS)]
-    return STYLE + subject + " " + hint
+def build_prompt(title, theme, seed, style="photo"):
+    preamble, prompts, hints = STYLES.get(style, STYLES["photo"])
+    subject = prompts.get(theme, prompts["default"])
+    hint = hints[stock._stable(seed) % len(hints)]
+    return preamble + subject + " " + hint
 
 
 # ---- OpenAI call ----------------------------------------------------------
@@ -145,16 +197,20 @@ def brand_treatment_logo(im):
 
 
 # ---- public entrypoint ----------------------------------------------------
-def gen(title, seed, w=1200, quality="medium"):
+def gen(title, seed, w=1200, quality="medium", style="photo", grad=False):
     """Returns (png_bytes, theme). Raises on any OpenAI/decode failure so the
-    /ai route can fall back to the vector scene."""
+    /ai route can fall back to the vector scene.
+
+    grad=True uses stock.brand_treatment (navy bottom gradient + logo), which
+    aids logo legibility over a busy photo; grad=False is logo + baseline only.
+    """
     h = int(w * 9 / 16)
     theme = classify(title)
-    prompt = build_prompt(title, theme, seed)
+    prompt = build_prompt(title, theme, seed, style)
     raw = _openai_image(prompt, quality=quality)
     im = Image.open(io.BytesIO(raw))
     im = stock.cover_crop(im, w, h)
-    im = brand_treatment_logo(im)
+    im = stock.brand_treatment(im) if grad else brand_treatment_logo(im)
     out = io.BytesIO()
     im.save(out, "PNG", optimize=True)
     return out.getvalue(), theme

@@ -16,7 +16,7 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "openai-v4", "scenes": len(_g.COMPOSE),
+    return {"ok": True, "code": "openai-v5-photo", "scenes": len(_g.COMPOSE),
             "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
@@ -39,16 +39,21 @@ def stock_route(title: str = "", seed: int = -1, w: int = 1200):
     return featured(title, seed, w)
 
 @app.get("/ai")
-def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "medium"):
-    """OpenAI (gpt-image-1) featured image. Falls back to the vector scene on ANY
-    failure so the daily pipeline never breaks (reason exposed in X-Fallback-Reason)."""
+def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "medium",
+             style: str = "photo", grad: int = 0):
+    """OpenAI (gpt-image-1) featured image. style=photo (photorealistic, default) or
+    style=illus (flat brand vector). grad=1 adds the navy bottom gradient under the logo.
+    Falls back to the vector scene on ANY failure so the daily pipeline never breaks
+    (reason exposed in X-Fallback-Reason)."""
     if seed < 0:
         seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 100000
     try:
-        png, theme = gptimg.gen(title, seed, w, quality=quality)
+        png, theme = gptimg.gen(title, seed, w, quality=quality,
+                                style=style, grad=bool(grad))
         fname = f"{_slugify(title)}-ai1.png"
         return Response(content=png, media_type="image/png",
                         headers={"X-Source": "openai", "X-Theme": theme,
+                                 "X-Style": style,
                                  "Content-Disposition": f'inline; filename="{fname}"'})
     except Exception as e:
         resp = featured(title, seed, w)          # vector fallback tier
