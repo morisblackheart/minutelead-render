@@ -16,7 +16,7 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "openai-v10-bespoke", "scenes": len(_g.COMPOSE),
+    return {"ok": True, "code": "openai-v11-spread", "scenes": len(_g.COMPOSE),
             "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
@@ -40,7 +40,7 @@ def stock_route(title: str = "", seed: int = -1, w: int = 1200):
 
 @app.get("/ai")
 def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "medium",
-             style: str = "photo", grad: int = 0, pid: int = 0):
+             style: str = "photo", grad: int = 0, pid: int = 0, spread: int = -1):
     """OpenAI (gpt-image-1) featured image. style=photo (photorealistic, default) or
     style=illus (flat brand vector). grad=1 adds the navy bottom gradient under the logo.
     Falls back to the vector scene on ANY failure so the daily pipeline never breaks
@@ -49,7 +49,8 @@ def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "med
         seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 100000
     try:
         png, theme, variant, subject = gptimg.gen(title, seed, w, quality=quality,
-                                                  style=style, grad=bool(grad), pid=pid)
+                                                  style=style, grad=bool(grad), pid=pid,
+                                                  spread=None if spread < 0 else spread)
         fname = f"{_slugify(title)}-ai1.png"
         return Response(content=png, media_type="image/png",
                         headers={"X-Source": "openai", "X-Theme": theme,

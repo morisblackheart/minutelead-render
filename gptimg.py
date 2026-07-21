@@ -229,30 +229,55 @@ STYLES = {
 # theme comes from the TITLE only -- it never reads what the post argues. This
 # reads the actual post and writes one scene for it.
 
+# Every post on this blog argues roughly the same thing (answer your phone faster),
+# so "illustrate this post" honestly returns the same literal scene every time --
+# a phone on a workbench showing a missed call. Left free, the model produced that
+# for ~20 of 24 posts, most of them demanding readable screen text. So the scene is
+# not left free: each post is ASSIGNED a setting, trade, time and people-flag from
+# seed-driven rotations, and the model must dramatise the post inside that box.
+SCENE_SETTINGS = [
+    "a residential kitchen", "a suburban driveway", "a basement utility room",
+    "a rooftop", "a front porch and doorway", "a home garage workshop",
+    "a small business back office", "the interior of a service van",
+    "a back garden or yard", "a residential street", "a hallway or entryway",
+    "a garden centre car park or supply yard",
+]
+SCENE_TRADES = [
+    "HVAC", "plumbing", "electrical", "roofing", "locksmithing",
+    "general contracting and renovation",
+]
+SCENE_TIMES = [
+    "early morning", "bright midday", "golden late afternoon",
+    "dusk with warm lit windows", "a fresh overcast day", "night lit by warm lamps",
+]
+
 BRIEF = """You write image-generation prompts for the featured image on a blog post.
 
 The blog belongs to MinuteLead, which sells AI phone answering and missed-call \
 text-back to local home-service businesses (HVAC, plumbing, electrical, roofing, \
 locksmiths, general contractors).
 
-Read the post below and write ONE sentence, at most 45 words, describing a single \
-photograph that illustrates THAT POST'S SPECIFIC ANGLE -- not a generic image about \
-the business in general.
+Write ONE sentence, at most 45 words, describing a single photograph for this post.
 
-Rules:
-- Describe a concrete real scene: what is in frame, where it is, what is happening.
-- Decide whether a person belongs. Many posts read better as an object or place: a \
-phone on a workbench, a van at dusk, an empty desk, a calendar, a doorway, a tool on \
-a tailgate. Include a person ONLY when the post is genuinely about people dealing \
-with each other. Do NOT default to a smiling worker looking at the camera -- that \
-shot is heavily overused, avoid it unless it is truly the best fit.
-- If you do include a person, specify their age and gender, and prefer them absorbed \
-in what they are doing rather than posing.
-- Be strongly different from a typical stock photo. Vary setting, time of day, trade, \
-season, object and viewpoint.
-- Name specific colourful details (a red toolbox, a mustard front door, green hedge).
-- The image must contain NO text, signage, numbers, logos, or readable screens.
-- Reply with the sentence ONLY. No preamble, no quotes."""
+HARD CONSTRAINTS -- you must obey all of them:
+- The scene MUST take place in the assigned setting, trade and time of day given below. \
+Do not substitute your own.
+- NEVER describe a phone, tablet, laptop or monitor screen showing anything. No \
+notifications, no missed calls, no clock faces, no numbers, no text of any kind \
+anywhere in the frame. Screens are switched off, dark, or turned away from camera. \
+Do not use the words notification, screen display, message or alert.
+- Do NOT describe "a phone on a workbench" or "a phone on a cluttered bench". That \
+exact scene is banned.
+- The image contains NO text, signage, numbers, logos or lettering of any kind.
+
+Style:
+- A concrete real moment: what is in frame, where, what is happening.
+- Name specific colourful details (a red toolbox, a mustard front door, a green hedge).
+- Avoid the posed smiling worker looking at camera; prefer people absorbed in a task.
+- Evoke the post's THEME (being reachable, responsiveness, winning the job, being \
+trusted) through the situation rather than through any device or writing.
+
+Reply with the sentence ONLY. No preamble, no quotes."""
 
 
 def _strip_html(s):
@@ -275,15 +300,55 @@ def fetch_post(pid, timeout=25):
     return title, body.strip()[:4000]
 
 
-def llm_subject(title, body, seed, timeout=60):
+# Left to the model, every person came back "a middle-aged man in a blue work
+# shirt". Assign the demographic rather than asking for one.
+SCENE_PEOPLE = [
+    "a woman in her thirties", "a man in his fifties", "a woman in her forties",
+    "a man in his twenties", "a man in his forties", "a woman in her fifties",
+    "a woman in her twenties", "a man in his thirties",
+]
+
+
+def scene_constraints(seed, spread=None):
+    """The assigned box this post's scene must live in.
+
+    `spread` is a position index supplied by the backfill loop: hashing alone
+    clustered 6 of 24 posts onto one setting, so when we know a post's position
+    in the run we stride the rotations for an even spread instead. Single posts
+    arriving from Make have no position and fall back to the hash.
+    """
+    if spread is None:
+        si = stock._stable(seed + 3)
+        ti = stock._stable(seed + 17)
+        di = stock._stable(seed + 41)
+        pi = stock._stable(seed + 59)
+        person_i = stock._stable(seed + 71)
+    else:
+        si, ti, di, pi, person_i = spread, spread // 3, spread // 5, spread, spread // 2
+    setting = SCENE_SETTINGS[si % len(SCENE_SETTINGS)]
+    trade = SCENE_TRADES[ti % len(SCENE_TRADES)]
+    time_of_day = SCENE_TIMES[di % len(SCENE_TIMES)]
+    people = (pi % 5) < 2                     # ~40% of posts carry a person
+    who = SCENE_PEOPLE[person_i % len(SCENE_PEOPLE)]
+    return setting, trade, time_of_day, people, who
+
+
+def llm_subject(title, body, seed, timeout=60, spread=None):
     """Ask the text model for one bespoke scene sentence. Raises on failure."""
     if not OPENAI_KEY:
         raise RuntimeError("OPENAI_API_KEY not set")
+    setting, trade, tod, people, who = scene_constraints(seed, spread)
+    people_line = ("Include exactly one person and they must be %s, absorbed in what "
+                   "they are doing, not looking at the camera." % who if people else
+                   "Include NO people at all -- this is a scene of a place and objects only.")
+    assignment = ("ASSIGNED SETTING: %s\nASSIGNED TRADE: %s\nASSIGNED TIME OF DAY: %s\n"
+                  "PEOPLE: %s" % (setting, trade, tod, people_line))
     payload = {
         "model": PROMPT_MODEL,
         "messages": [
             {"role": "system", "content": BRIEF},
-            {"role": "user", "content": "TITLE: %s\n\nPOST:\n%s" % (title, body)},
+            {"role": "user", "content": "%s\n\nTITLE: %s\n\nPOST:\n%s"
+             % (assignment, title, body)},
         ],
         "temperature": 0.9,      # variety across posts
         "seed": int(seed) % 2_000_000_000,   # ...but reproducible per post
@@ -401,7 +466,8 @@ def brand_treatment_logo(im):
 
 
 # ---- public entrypoint ----------------------------------------------------
-def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0):
+def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0,
+        spread=None):
     """Returns (png_bytes, theme, variant, subject). Raises on any OpenAI/decode
     failure so the /ai route can fall back to the vector scene.
 
@@ -423,7 +489,7 @@ def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0)
     if pid and style == "photo":
         try:
             ptitle, body = fetch_post(pid)
-            subject = llm_subject(ptitle or title, body, seed)
+            subject = llm_subject(ptitle or title, body, seed, spread=spread)
             preamble, _, hints = STYLES["photo"]
             prompt = (preamble + subject + " "
                       + hints[stock._stable(seed + 7) % len(hints)] + " "
