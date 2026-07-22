@@ -72,16 +72,20 @@ ILLUS_STYLE = (
 # vignette/glow/HDR/CGI-sheen are the giveaways that read as AI-generated.
 PHOTO_STYLE = (
     "A vivid, colourful photorealistic editorial photograph, shot on a full-frame DSLR with a 35mm "
-    "lens, beautiful natural light. Rich, saturated, lively colour with real depth and punch, like a "
-    "well-graded magazine feature -- bright and full of life, never flat, dull, muted, grey or washed "
-    "out. Authentic real-world texture and honest materials. Evenly exposed across the entire frame. "
+    "lens, beautiful light. Rich, saturated, lively colour with real depth and punch, like a "
+    "well-graded tech-magazine feature -- bright and full of life, never flat, dull, muted, grey or "
+    "washed out. The world is MODERN and CONTEMPORARY: sleek current-generation interiors, clean "
+    "lines, glass, brushed metal, fresh paint, new appliances and vehicles -- the visual language of "
+    "a technology-forward company. Absolutely no rustic, ranch, farmhouse, country, vintage or "
+    "weathered-barn-wood aesthetics; nothing old, worn, cluttered or dingy. "
+    "Evenly exposed across the entire frame. "
     "Absolutely no vignette, no darkened corners or edge falloff, no radial glow, no spotlight effect. "
     "No HDR halos, no glossy CGI sheen, no plastic or waxy skin, no over-sharpening, no bloom. "
     "Candid and unposed, not a stiff stock-photo look. "
     "When people appear, show genuine warm natural expressions and real skin texture with visible "
     "pores and fine lines -- never airbrushed, never mannequin-like. Correct natural hands. "
     "No text, letters, words, numbers, signage, logos, watermarks, or legible screen content anywhere "
-    "in the frame. Any screen is off or shows an indistinct blur. "
+    "in the frame. Any screen shows only a soft indistinct glow or abstract blur of colour. "
 )
 
 # ---- prompt libraries -----------------------------------------------------
@@ -275,7 +279,12 @@ exact scene is banned.
 
 Style:
 - A concrete real moment: what is in frame, where, what is happening.
-- Name specific colourful details (a red toolbox, a mustard front door, a green hedge).
+- MinuteLead is an AI TECHNOLOGY company. The world must read modern and \
+tech-forward: contemporary interiors, sleek offices, smart-home details, new clean \
+vehicles and equipment. NEVER rustic, ranch, country, vintage or weathered.
+- Favour the business-and-technology side of the trade (a bright dispatch desk, a \
+modern office, a homeowner in a contemporary home) at least as often as tools.
+- Name specific colourful details (a teal accent wall, a cobalt van, a copper lamp).
 - Avoid the posed smiling worker looking at camera; prefer people absorbed in a task.
 - Evoke the post's THEME (being reachable, responsiveness, winning the job, being \
 trusted) through the situation rather than through any device or writing.
@@ -485,7 +494,7 @@ def brand_treatment_logo(im):
 
 # ---- public entrypoint ----------------------------------------------------
 def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0,
-        spread=None):
+        spread=None, subject=None):
     """Returns (png_bytes, theme, variant, subject). Raises on any OpenAI/decode
     failure so the /ai route can fall back to the vector scene.
 
@@ -504,7 +513,15 @@ def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0,
     subject_src = "library"
     prompt = build_prompt(title, theme, seed, style)
 
-    if pid and style == "photo":
+    if subject and style == "photo":
+        # caller supplied a ready scene (e.g. the batch backfill, where one LLM
+        # call writes all scenes together and dedups them globally)
+        preamble, _, hints = STYLES["photo"]
+        prompt = (preamble + subject + " "
+                  + hints[stock._stable(seed + 7) % len(hints)] + " "
+                  + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)])
+        subject_src = subject
+    elif pid and style == "photo":
         try:
             ptitle, body = fetch_post(pid)
             subject = llm_subject(ptitle or title, body, seed, spread=spread)

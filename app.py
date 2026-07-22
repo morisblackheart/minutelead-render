@@ -16,7 +16,7 @@ def _slugify(s):
 @app.get("/health")
 def health():
     import generate as _g
-    return {"ok": True, "code": "openai-v12-cast", "scenes": len(_g.COMPOSE),
+    return {"ok": True, "code": "openai-v13-modern", "scenes": len(_g.COMPOSE),
             "openai": bool(gptimg.OPENAI_KEY)}
 
 @app.get("/featured")
@@ -40,9 +40,12 @@ def stock_route(title: str = "", seed: int = -1, w: int = 1200):
 
 @app.get("/ai")
 def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "medium",
-             style: str = "photo", grad: int = 0, pid: int = 0, spread: int = -1):
+             style: str = "photo", grad: int = 0, pid: int = 0, spread: int = -1,
+             subject: str = ""):
     """OpenAI (gpt-image-1) featured image. style=photo (photorealistic, default) or
     style=illus (flat brand vector). grad=1 adds the navy bottom gradient under the logo.
+    subject=<urlencoded scene sentence> overrides the LLM scene writer -- used by the
+    batch backfill, which writes all scenes in one call and dedups them globally.
     Falls back to the vector scene on ANY failure so the daily pipeline never breaks
     (reason exposed in X-Fallback-Reason)."""
     if seed < 0:
@@ -50,7 +53,8 @@ def ai_route(title: str = "", seed: int = -1, w: int = 1200, quality: str = "med
     try:
         png, theme, variant, subject = gptimg.gen(title, seed, w, quality=quality,
                                                   style=style, grad=bool(grad), pid=pid,
-                                                  spread=None if spread < 0 else spread)
+                                                  spread=None if spread < 0 else spread,
+                                                  subject=subject.strip() or None)
         fname = f"{_slugify(title)}-ai1.png"
         return Response(content=png, media_type="image/png",
                         headers={"X-Source": "openai", "X-Theme": theme,
