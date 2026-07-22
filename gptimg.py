@@ -235,12 +235,15 @@ STYLES = {
 # for ~20 of 24 posts, most of them demanding readable screen text. So the scene is
 # not left free: each post is ASSIGNED a setting, trade, time and people-flag from
 # seed-driven rotations, and the model must dramatise the post inside that box.
+# Every entry must be a place a home-service call actually happens. An earlier
+# "garden centre car park or supply yard" produced a lovely photo of flower pots
+# for a post about after-hours answering -- variety bought at the cost of relevance.
 SCENE_SETTINGS = [
     "a residential kitchen", "a suburban driveway", "a basement utility room",
     "a rooftop", "a front porch and doorway", "a home garage workshop",
     "a small business back office", "the interior of a service van",
     "a back garden or yard", "a residential street", "a hallway or entryway",
-    "a garden centre car park or supply yard",
+    "a residential bathroom or laundry room",
 ]
 SCENE_TRADES = [
     "HVAC", "plumbing", "electrical", "roofing", "locksmithing",
@@ -302,10 +305,20 @@ def fetch_post(pid, timeout=25):
 
 # Left to the model, every person came back "a middle-aged man in a blue work
 # shirt". Assign the demographic rather than asking for one.
+# Age+gender alone was not enough: every woman came back the same auburn wavy-haired
+# person in a yellow tee or blue denim shirt. Appearance is pinned too, and the list
+# alternates gender so a striding index can't skew the run 8:2 female.
 SCENE_PEOPLE = [
-    "a woman in her thirties", "a man in his fifties", "a woman in her forties",
-    "a man in his twenties", "a man in his forties", "a woman in her fifties",
-    "a woman in her twenties", "a man in his thirties",
+    "a woman in her thirties with short dark hair",
+    "a man in his fifties with grey hair and a beard",
+    "a woman in her forties with black hair tied back",
+    "a man in his twenties, clean-shaven with cropped fair hair",
+    "a woman in her fifties with short silver hair",
+    "a man in his forties with dark brown hair",
+    "a woman in her twenties with long blonde hair",
+    "a man in his thirties, stocky with black hair",
+    "a woman in her sixties with grey hair",
+    "a man in his sixties, lean with white hair",
 ]
 
 
@@ -324,7 +337,12 @@ def scene_constraints(seed, spread=None):
         pi = stock._stable(seed + 59)
         person_i = stock._stable(seed + 71)
     else:
-        si, ti, di, pi, person_i = spread, spread // 3, spread // 5, spread, spread // 2
+        # person_i must advance once per PEOPLE-post, not once per spread: people
+        # land on spread%5<2, which aliases against the person list and collapsed
+        # 10 people-posts onto 4 demographics. This counts the people-posts before
+        # this one, so each gets the next entry and the alternating list stays 50/50.
+        si, ti, di, pi = spread, spread // 3, spread // 5, spread
+        person_i = (spread // 5) * 2 + min(spread % 5, 2)
     setting = SCENE_SETTINGS[si % len(SCENE_SETTINGS)]
     trade = SCENE_TRADES[ti % len(SCENE_TRADES)]
     time_of_day = SCENE_TIMES[di % len(SCENE_TIMES)]
