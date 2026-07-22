@@ -227,6 +227,138 @@ STYLES = {
 }
 
 
+# ---- editorial master prompt (tier 0, owner-authored 2026-07-22) ----------
+# The owner's permanent image-direction doc. Sent DIRECTLY to the image model
+# with the variables filled from the live post; the model analyzes the article
+# silently and generates the scene itself (no intermediate text-model stage).
+EDITORIAL_DOC = """You are the editorial photo director for MinuteLead.
+Create ONE horizontal featured image for the blog article supplied below. Silently \
+analyze the title, excerpt, headings, and body before choosing the scene. Do not \
+output analysis or explanatory text -- generate only the image.
+
+ABOUT MINUTELEAD
+MinuteLead is a managed AI agent platform for local service businesses. It answers \
+calls, immediately texts back missed callers, qualifies inquiries, books appointments \
+and estimates, handles scheduling and follow-up, requests reviews, and reports booked \
+revenue. MinuteLead is not selling futuristic technology for its own sake. It helps \
+real business owners answer faster, stop losing inquiries, and book more work while \
+their teams remain focused on customers and fieldwork.
+
+ARTICLE
+Title: {title}
+Excerpt: {excerpt}
+Primary keyword: {keyword}
+Headings: {headings}
+Article content: {content}
+Preferred industry, if supplied: {industry}
+
+SCENE SELECTION
+Identify the article's:
+1. Exact industry, if one is genuinely central
+2. Real customer or operational problem
+3. MinuteLead workflow involved: answering, text-back, qualification, booking, \
+scheduling, follow-up, reviews, or reporting
+4. Most meaningful human outcome
+5. Appropriate time, place, tools, and working conditions
+Choose one specific, believable moment that communicates the article's main idea \
+without needing a caption. Show the practical outcome rather than "AI" itself. \
+Examples include:
+- A technician continuing real work while an inquiry is handled in the background
+- A homeowner receiving a prompt response to a genuine service problem
+- A dispatcher or owner reviewing a newly qualified job
+- A customer and service professional confirming an estimate or appointment
+- An after-hours inquiry being handled while the service office is closed
+If the title names a trade, show that trade accurately with plausible tools, \
+clothing, vehicle, location, and safety practices. Do not substitute a generic \
+office worker. If the article is industry-neutral, use a believable small \
+local-service business environment. Do not invent a specific trade unless an \
+industry focus was supplied.
+
+SCENE ROTATION GUIDE
+Missed calls, response speed, lead recovery -> technician actively working while a \
+phone notification remains secondary. After-hours answering -> homeowner facing a \
+believable evening service problem and receiving help. Qualification -> owner or \
+dispatcher reviewing urgency, service area, and job details. Booking and estimate \
+follow-up -> customer and service professional agreeing on a real next step. \
+Plumber, HVAC, electrician, roofer, locksmith -> accurate trade-specific action, \
+environment, equipment, and PPE. AI receptionist or managed system -> business \
+operating normally while communication is handled quietly in the background. \
+Call-centre comparisons -> small-business owner staying productive without a room \
+full of headset agents. Broad AI guides -> human-centred service workflow using \
+contemporary devices, not literal AI imagery.
+
+PEOPLE
+Include zero to two adults only when they strengthen the story. People should be \
+candidly working, listening, assessing a problem, speaking with a customer, or \
+reacting naturally to a useful response. They must not pose or look into the camera. \
+Phones, tablets, calendars, and computers may appear only as secondary evidence. \
+Screens should be naturally angled, small in the composition, and contain no \
+readable text.
+
+STYLE
+Photorealistic candid editorial documentary photograph taken in a real current-day \
+Canadian local-business environment. Natural skin texture, pores, wrinkles, fabric \
+wear, ordinary tools, small environmental imperfections, believable posture, \
+realistic hands, and accurate materials. The image should feel observed rather than \
+staged. Eye-level or slightly off-axis viewpoint. Natural 35mm or 50mm \
+editorial-photography feel. Soft available daylight or believable practical evening \
+light. Natural colour balance, restrained contrast, moderate depth of field, and \
+very subtle film grain. Use MinuteLead's navy #1B3256 and blue #0170B9 only as \
+subtle environmental accents such as clothing, a clipboard, a vehicle detail, or \
+office object. Do not wash the entire image in brand colours.
+
+COMPOSITION
+Horizontal 16:9 blog hero image. One clear focal moment with readable visual \
+storytelling. Keep important faces, hands, tools, and equipment away from crop \
+edges. Leave a calm, unobstructed area near the lower-right corner for a real \
+MinuteLead brand mark to be added afterward. Single coherent photograph -- no \
+collage, split screen, infographic, or multi-panel layout.
+
+HARD EXCLUSIONS
+- No robots, androids, robot hands, artificial brains, circuit-board faces, \
+holograms, floating dashboards, floating chat bubbles, data streams, glowing grids, \
+or science-fiction interfaces
+- No neon cyberpunk lighting or excessive blue/orange cinematic grading
+- No generic call-centre rows unless an actual call centre is the article's central \
+subject
+- No posed handshake, thumbs-up, exaggerated stock-photo smile, or person staring \
+at the camera
+- No plastic skin, beauty retouching, perfect symmetry, extreme HDR, heavy bokeh, \
+excessive lens flare, or immaculate showroom environments
+- No unsafe trade work, inaccurate tools, impossible equipment, or incorrect PPE
+- No written words, numbers, UI copy, article title, watermarks, generated logos, \
+trademarks, or fake brand marks
+- Do not create a generic "person smiling at a laptop" scene
+The final image must feel useful, grounded, current, trustworthy, and human -- real \
+service work supported quietly by modern automation."""
+
+EDITORIAL_MODELS = ["gpt-image-2", "gpt-image-1"]   # try in order
+
+
+def fetch_post_full(pid, timeout=25):
+    """Title, excerpt, headings list, plain body, slug for a published post."""
+    req = urllib.request.Request(
+        "%s/posts/%d?_fields=title,excerpt,content,slug" % (WP_API, int(pid)),
+        headers={"User-Agent": BROWSER_UA, "Connection": "close"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.loads(r.read())
+    html = d.get("content", {}).get("rendered", "")
+    headings = [_strip_html(h) for h in
+                re.findall(r"<h[23][^>]*>(.*?)</h[23]>", html, re.S)][:12]
+    return {
+        "title": _strip_html(d.get("title", {}).get("rendered", "")),
+        "excerpt": _strip_html(d.get("excerpt", {}).get("rendered", ""))[:400],
+        "headings": "; ".join(headings) or "none",
+        "content": _strip_html(html)[:3000],
+        "keyword": (d.get("slug", "") or "").replace("-", " "),
+    }
+
+
+def build_editorial_prompt(pid, industry=""):
+    post = fetch_post_full(pid)
+    return EDITORIAL_DOC.format(industry=industry or "infer from the article", **post)
+
+
 # ---- bespoke per-post prompt (tier 1) -------------------------------------
 # The theme library below is a coarse fallback: 13 regex themes over a small
 # variant pool means many posts converge on the same handful of scenes, and the
@@ -427,11 +559,12 @@ def build_prompt(title, theme, seed, style="photo"):
 
 
 # ---- OpenAI call ----------------------------------------------------------
-def _openai_image(prompt, size="1536x1024", quality="medium", timeout=120):
+def _openai_image(prompt, size="1536x1024", quality="medium", timeout=180,
+                  model="gpt-image-1"):
     if not OPENAI_KEY:
         raise RuntimeError("OPENAI_API_KEY not set")
     body = json.dumps({
-        "model": "gpt-image-1",
+        "model": model,
         "prompt": prompt,
         "size": size,
         "quality": quality,
@@ -513,30 +646,38 @@ def gen(title, seed, w=1200, quality="medium", style="photo", grad=False, pid=0,
     subject_src = "library"
     prompt = build_prompt(title, theme, seed, style)
 
+    model_used = "gpt-image-1"
+    raw = None
+
     if subject and style == "photo":
-        # caller supplied a ready scene (e.g. the batch backfill, where one LLM
-        # call writes all scenes together and dedups them globally)
+        # caller supplied a ready scene (e.g. a batch backfill with globally
+        # deduped scenes)
         preamble, _, hints = STYLES["photo"]
         prompt = (preamble + subject + " "
                   + hints[stock._stable(seed + 7) % len(hints)] + " "
                   + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)])
         subject_src = subject
     elif pid and style == "photo":
+        # tier 0: the owner's editorial master prompt, filled from the live post
+        # and sent straight to the image model (it analyzes the article itself)
         try:
-            ptitle, body = fetch_post(pid)
-            subject = llm_subject(ptitle or title, body, seed, spread=spread)
-            preamble, _, hints = STYLES["photo"]
-            prompt = (preamble + subject + " "
-                      + hints[stock._stable(seed + 7) % len(hints)] + " "
-                      + PHOTO_LIGHT[stock._stable(seed + 13) % len(PHOTO_LIGHT)])
-            subject_src = subject
+            eprompt = build_editorial_prompt(pid)
+            for m in EDITORIAL_MODELS:
+                try:
+                    raw = _openai_image(eprompt, quality=quality, model=m)
+                    model_used, subject_src = m, "editorial"
+                    break
+                except RuntimeError as e:
+                    if "model" not in str(e).lower():   # non-model error: stop
+                        raise
         except Exception:
-            pass                      # keep the library prompt already built
+            raw = None                # fall through to the library prompt
 
-    raw = _openai_image(prompt, quality=quality)
+    if raw is None:
+        raw = _openai_image(prompt, quality=quality)
     im = Image.open(io.BytesIO(raw))
     im = stock.cover_crop(im, w, h)
     im = stock.brand_treatment(im) if grad else brand_treatment_logo(im)
     out = io.BytesIO()
     im.save(out, "PNG", optimize=True)
-    return out.getvalue(), theme, variant, subject_src
+    return out.getvalue(), theme, variant, subject_src, model_used
